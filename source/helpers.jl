@@ -1,4 +1,4 @@
-using LinearAlgebra, StatsPlots, PrettyTables, Dates, Random, Statistics
+using LinearAlgebra, StatsPlots, Dates, Random, Statistics
 
 mutable struct AllocationInstance
     loc_I::Matrix{Int64}

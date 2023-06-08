@@ -1,12 +1,11 @@
 using LinearAlgebra, Plots, PrettyTables, Statistics
 
-include("solve_static.jl")
-include("solve_comp.jl")
 include("solve_iter.jl")
 include("helpers.jl")
-times = zeros(25, 10)
+times = zeros(25, 3)
+no_sp = 2
 io = open("results/main.txt", "w")
-write(io, "K-adapt times for 5 service points, n demand points, 3 iterations\n")
+write(io, "Solution times for $(no_sp) service points, n demand points, 3 iterations\n")
 close(io)
 rand_seeds = rand(500:999, 10,25)
 
@@ -15,7 +14,7 @@ for count in 1:10
     write(io, "Iteration $count:\n")
     close(io)
     for n in 1:25
-        no_sp = 5
+        
         no_dp = n
         se = rand_seeds[count,n]
         io = open("results/main.txt", "a")

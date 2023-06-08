@@ -15,7 +15,7 @@ function solve_bb_general(K, inst)
     y_i = []            # second-stage solution
     s_i = []
     it = 0
-    while (isempty(N) == false) && (it < 1000)
+    while (isempty(N) == false) && (it < 1500)
         it = it + 1
         #println("number of unexplored nodes: $(length(N))")
         # select unexplored node (TODO: which one to select?)
@@ -159,7 +159,7 @@ function solve_separation_problem_general(theta, y, s, inst)
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
     end
 
-    M = 10^4
+    M = 2*D+1
     @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
     #@constraint(us, [k=1:K], zeta + M*z[k,0] <= M + slack_coeff*sum(s[j,k] for j in 1:J) + sum(c[i,j]*y[i,j,k] for i in 1:I, j in 1:J) - theta) #don't need this because objective coeffs are certain
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] -( sum(y[i,j,k] for i in 1:I)+s[j,k]))

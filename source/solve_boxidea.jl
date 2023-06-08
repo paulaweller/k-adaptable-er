@@ -13,7 +13,7 @@ function solve_boxes(K, loc_I, loc_J, W, D, pc)
     zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi)
     iteration = 0 # iteration counter
 
-    while zeta > 10^(-6) && iteration <= 30
+    while zeta > 10^(-6) && iteration <= 50
         iteration = iteration + 1
         push!(tau, d)
 
@@ -92,7 +92,7 @@ function solve_separation_problem_boxes(loc_J, D, pc, K, ξ)
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
     end
 
-    M = 10^4
+    M = 2*D+1
     @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
     #@constraint(us, [k=1:K, j=1:J], zeta + ξ[j,k] <= d[j]*z[k,j])
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] - ξ[j,k])

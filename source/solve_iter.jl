@@ -35,7 +35,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     c = reshape([norm(inst.loc_I[i,:]-inst.loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
 
     # coefficient for slack variables in objective
-    c_slack = 1+max(c...)
+    c_slack = 10*max(c...)
     # scenario_tree is a vector containing every scenario in the tree
     # We will have one cell for every leaf scenario in the tree
     leaf_scenarios = filter(is_leaf, scenario_tree)

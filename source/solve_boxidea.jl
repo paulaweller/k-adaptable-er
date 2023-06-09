@@ -13,7 +13,7 @@ function solve_boxes(K, loc_I, loc_J, W, D, pc)
     zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi)
     iteration = 0 # iteration counter
 
-    while zeta > 10^(-6) && iteration <= 50
+    while zeta > 10^(-6) && iteration <= 50 # 0 instead of 10^-6?
         iteration = iteration + 1
         push!(tau, d)
 
@@ -42,6 +42,7 @@ function solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K)
     slack_coeff = 10*max(c...)
 
     rm = Model(Gurobi.Optimizer)
+    set_optimizer_attribute(rm, "OutputFlag", 0)
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -81,6 +82,7 @@ function solve_separation_problem_boxes(loc_J, D, pc, K, ξ)
 
     J = size(loc_J, 1)
     us = Model(Gurobi.Optimizer)
+    set_optimizer_attribute(us, "OutputFlag", 0)
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?

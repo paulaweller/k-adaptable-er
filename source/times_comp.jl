@@ -11,7 +11,7 @@ objectives = zeros(number_of_instances,3)
 iterations = zeros(number_of_instances, 3)
 no_sp = 2
 no_dp = 3
-k = 3
+k = 4
 io = open("results/main.txt", "w")
 write(io, "Solution times for $(no_sp) service points, $(no_dp) demand points, k=$(k)\norder: [BB, iter, box]\n")
 close(io)

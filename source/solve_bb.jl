@@ -32,7 +32,7 @@ function solve_bb_general(K, inst)
             zeta, xi = solve_separation_problem_general(theta, y, s, inst)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
-            if zeta <= 0 # no violations
+            if zeta <= -10^(-6) # no violations -- 10^-6 instead of 0 ?
 
                 #$(θ^i, x^i, y^i) ← (θ, x, y)$
                 theta_i = copy(theta)
@@ -97,6 +97,7 @@ function solve_scenario_based(tau, inst)
     slack_coeff = 10*max(c...)
 
     rm = Model(Gurobi.Optimizer)
+    set_optimizer_attribute(rm, "OutputFlag", 0)
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -148,6 +149,7 @@ function solve_separation_problem_general(theta, y, s, inst)
     slack_coeff = 10*max(c...)
     
     us = Model(Gurobi.Optimizer)
+    set_optimizer_attribute(us, "OutputFlag", 0)
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?

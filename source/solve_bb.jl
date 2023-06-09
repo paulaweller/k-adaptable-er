@@ -15,7 +15,8 @@ function solve_bb_general(K, inst)
     y_i = []            # second-stage solution
     s_i = []
     it = 0
-    while (isempty(N) == false) && (it < 1500)
+    time_start = now()
+    while (isempty(N) == false) && (runtime <= 240) # stop after 240 s
         it = it + 1
         #println("number of unexplored nodes: $(length(N))")
         # select unexplored node (TODO: which one to select?)
@@ -32,7 +33,7 @@ function solve_bb_general(K, inst)
             zeta, xi = solve_separation_problem_general(theta, y, s, inst)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
-            if zeta <= -10^(-6) # no violations -- 10^-6 instead of 0 ?
+            if zeta <= -10^(-6) # no violations
 
                 #$(θ^i, x^i, y^i) ← (θ, x, y)$
                 theta_i = copy(theta)
@@ -65,6 +66,7 @@ function solve_bb_general(K, inst)
             end
 
         end
+        runtime = (now()-time_start).value/1000
     end
     
     if theta_i == 10^10
@@ -73,7 +75,7 @@ function solve_bb_general(K, inst)
 
     else
 
-        return x_i, y_i, s_i, theta_i, it
+        return x_i, y_i, s_i, theta_i, it, runtime
 
     end
 end

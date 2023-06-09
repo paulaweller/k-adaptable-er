@@ -13,7 +13,8 @@ function solve_boxes(K, loc_I, loc_J, W, D, pc)
     zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi)
     iteration = 0 # iteration counter
 
-    while zeta > 10^(-6) && iteration <= 50 # 0 instead of 10^-6?
+    time_start = now()
+    while zeta > 10^(-6) && (runtime <= 240)
         iteration = iteration + 1
         push!(tau, d)
 
@@ -22,9 +23,10 @@ function solve_boxes(K, loc_I, loc_J, W, D, pc)
 
         # find violations
         zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi)
+        runtime = (now()-time_start).value/1000
     end
     
-    return x, y, s, xi, theta, iteration
+    return x, y, s, xi, theta, iteration, runtime
 
 end
 

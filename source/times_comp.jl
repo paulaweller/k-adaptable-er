@@ -35,20 +35,14 @@ for n in 1:number_of_instances
     c = reshape([norm(inst_gen.loc_I[i,:]-inst_gen.loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     # println("Locations:\nloc_I = $(inst_gen.loc_I)\nloc_J = $(inst_gen.loc_J)")
 
-    starting = now()
-    x_general, y_general, s_general, theta_general, it_general = solve_bb_general(k, inst_gen)
-    ending = now()
-    duration_general = (ending-starting).value/1000 # convert to seconds
+    x_general, y_general, s_general, theta_general, it_general, duration_general = solve_bb_general(k, inst_gen)
 
     starting = now()
     theta_iter, x_iter, y_iter, k_iter, ktrue_iter = k_adapt_solution(2, inst_gen)
     ending = now()
     duration_iter = (ending-starting).value/1000 # convert to seconds
 
-    starting = now()
-    x_box, y_box, s_box, xi_box, theta_box, it_box = solve_boxes(k, inst_gen.loc_I, inst_gen.loc_J, inst_gen.W, inst_gen.D, inst_gen.pc)
-    ending = now()
-    duration_box = (ending-starting).value/1000 # convert to seconds
+    x_box, y_box, s_box, xi_box, theta_box, it_box, duration_box = solve_boxes(k, inst_gen.loc_I, inst_gen.loc_J, inst_gen.W, inst_gen.D, inst_gen.pc)
 
     
 
@@ -73,9 +67,9 @@ for n in 1:number_of_instances
 
 end
 
-# when was max number of iterations reached?
-maxit_bb = findall(x-> x==1501, iterations[:,1])
-maxit_box = findall(x-> x == 51, iterations[:,3])
+# when was max runtime reached?
+maxit_bb = findall(x-> x>240, times[:,1])
+maxit_box = findall(x-> x>240, times[:,3])
 
 plot(1:number_of_instances, times[:,1], ylabel="seconds", xlabel="instance", title="comp times for k=3, $(number_of_instances) instances of size $(no_sp)x$(no_dp)", label="BB")
 plot!(1:number_of_instances, times[:,2], label="iter")

@@ -1,4 +1,5 @@
 using JuMP, Gurobi
+const GRB_ENV_box = Gurobi.Env()
 
 """
     solve_boxes(K, loc_i, loc_J, W, D, pc)
@@ -43,7 +44,7 @@ function solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K)
     # coefficient for slack variables in objective
     slack_coeff = 10*max(c...)
 
-    rm = Model(Gurobi.Optimizer)
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
     set_optimizer_attribute(rm, "OutputFlag", 0)
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
@@ -83,7 +84,7 @@ end
 function solve_separation_problem_boxes(loc_J, D, pc, K, ξ)
 
     J = size(loc_J, 1)
-    us = Model(Gurobi.Optimizer)
+    us = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
     set_optimizer_attribute(us, "OutputFlag", 0)
 
     @variable(us, zeta)     # amount of violation

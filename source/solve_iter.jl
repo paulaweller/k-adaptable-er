@@ -4,6 +4,7 @@
 #-----------------------------------------------------------------------
 
 using JuMP, LinearAlgebra, Gurobi
+const GRB_ENV_iter = Gurobi.Env()
 
 import Random
 
@@ -42,7 +43,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     P = length(leaf_scenarios)  # Number of cells
 
     # Initialize the RO model
-    rm = Model(() -> Gurobi.Optimizer())
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter))
     set_silent(rm)
     # Decision variables:
     # First stage, here-and-now decision where to store supplies
@@ -124,7 +125,7 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int
     J = size(loc_J,1)
     leaf_scenarios = filter(is_leaf, scenario_tree)
     # Define the separation model
-    sm = Model(() -> Gurobi.Optimizer())
+    sm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter))
     set_silent(sm)
     # variables
     @variable(sm, 0 <= d[1:J] <= D)

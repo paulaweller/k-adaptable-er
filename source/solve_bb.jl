@@ -1,5 +1,5 @@
 using JuMP, Gurobi
-#const GRB_ENV_bb = Gurobi.Env()
+const GRB_ENV_bb = Gurobi.Env()
 
 """
     solve_bb_general(K, inst)
@@ -25,15 +25,15 @@ function solve_bb_general(K, inst)
         # and delete from set of unexplored nodes
         
         tau = popfirst!(N)
-        println("tau = $tau")
+
         #println("tau = $(tau)")
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
-        @show theta, x, y, s = solve_scenario_based(tau, inst)
+        theta, x, y, s = solve_scenario_based(tau, inst)
         #println("theta = $(theta), theta_i = $(theta_i)")
         if theta < theta_i
 
             #(ζ, \xi, z)$ = Solve Separation Problem (8): max $ζ$ where $ζ$ is the amount of violation of the uncertain constraints and $\xi$ is the scenario that leads to violation
-            @show zeta, xi = solve_separation_problem_general(y, s, inst)
+            zeta, xi = solve_separation_problem_general(y, s, inst)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
             if zeta <= 10^(-6) # no violations
@@ -101,8 +101,8 @@ function solve_scenario_based(tau, inst)
     # coefficient for slack variables in objective
     slack_coeff = 10*max(c...)
 
-    #rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb))
-    rm = Model(Gurobi.Optimizer)
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb))
+    #rm = Model(Gurobi.Optimizer)
     set_optimizer_attribute(rm, "OutputFlag", 0)
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision

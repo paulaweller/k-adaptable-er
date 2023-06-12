@@ -5,13 +5,13 @@ include("solve_iter.jl")
 include("solve_bb.jl")
 include("solve_boxidea.jl")
 
-number_of_instances = 3
+number_of_instances = 25
 times = zeros(number_of_instances, 3)
 objectives = zeros(number_of_instances,3)
 iterations = zeros(number_of_instances, 3)
 no_sp = 1
-no_dp = 2
-k = 2
+no_dp = 4
+k = 3
 io = open("results/main.txt", "w")
 write(io, "Solution times for $(no_sp) service points, $(no_dp) demand points, k=$(k)\norder: [BB, iter, box]\n")
 close(io)
@@ -35,13 +35,16 @@ for n in 1:number_of_instances
     c = reshape([norm(inst_gen.loc_I[i,:]-inst_gen.loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     # println("Locations:\nloc_I = $(inst_gen.loc_I)\nloc_J = $(inst_gen.loc_J)")
 
+    println("BB started")
     x_general, y_general, s_general, theta_general, it_general, duration_general = solve_bb_general(k, inst_gen)
 
+    println("iter started")
     starting = now()
     theta_iter, x_iter, y_iter, k_iter, ktrue_iter = k_adapt_solution(2, inst_gen)
     ending = now()
     duration_iter = (ending-starting).value/1000 # convert to seconds
 
+    println("box started")
     x_box, y_box, s_box, xi_box, theta_box, it_box, duration_box = solve_boxes(k, inst_gen.loc_I, inst_gen.loc_J, inst_gen.W, inst_gen.D, inst_gen.pc)
 
     

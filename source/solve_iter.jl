@@ -183,7 +183,7 @@ function k_adapt_solution(it::Int64, inst::AllocationInstance)
 
     # q_it = 0
     for i in 1:it
-        println("Iteration $i started.")
+        #println("Iteration $i started.")
         obj_it, w_it, q_it, p_it, p_true_it = solve_partitioned_problem(inst, scenario_tree)
         push!(obj_val, obj_it)
         push!(w_val, w_it)

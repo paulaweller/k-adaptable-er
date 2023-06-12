@@ -15,7 +15,8 @@ function solve_boxes(K, loc_I, loc_J, W, D, pc)
     iteration = 0 # iteration counter
 
     time_start = now()
-    while zeta > 10^(-6) && (runtime <= 240)
+    runtime = 0
+    while zeta >= 10^(-6) && (runtime <= 240)
         iteration = iteration + 1
         push!(tau, d)
 

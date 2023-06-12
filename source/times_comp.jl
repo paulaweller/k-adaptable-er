@@ -5,17 +5,17 @@ include("solve_iter.jl")
 include("solve_bb.jl")
 include("solve_boxidea.jl")
 
-number_of_instances = 25
+number_of_instances = 3
 times = zeros(number_of_instances, 3)
 objectives = zeros(number_of_instances,3)
 iterations = zeros(number_of_instances, 3)
-no_sp = 2
-no_dp = 3
-k = 4
+no_sp = 1
+no_dp = 2
+k = 2
 io = open("results/main.txt", "w")
 write(io, "Solution times for $(no_sp) service points, $(no_dp) demand points, k=$(k)\norder: [BB, iter, box]\n")
 close(io)
-rand_seeds = rand(500:999,25)
+rand_seeds = rand(500:999,number_of_instances)
 
 
 for n in 1:number_of_instances
@@ -71,7 +71,7 @@ end
 maxit_bb = findall(x-> x>240, times[:,1])
 maxit_box = findall(x-> x>240, times[:,3])
 
-plot(1:number_of_instances, times[:,1], ylabel="seconds", xlabel="instance", title="comp times for k=3, $(number_of_instances) instances of size $(no_sp)x$(no_dp)", label="BB")
+plot(1:number_of_instances, times[:,1], ylabel="seconds", xlabel="instance", title="comp times for k=$k, $(number_of_instances) instances of size $(no_sp)x$(no_dp)", label="BB")
 plot!(1:number_of_instances, times[:,2], label="iter")
 plot!(1:number_of_instances, times[:,3], label="Box")
 if length(maxit_bb) > 0
@@ -82,7 +82,7 @@ if length(maxit_box)> 0
 end
 savefig("results/times.png")
 
-plot(1:number_of_instances, objectives[:,1], ylabel="objective", xlabel="instance", title="objectives for k=3, $(number_of_instances) instances of size $(no_sp)x$(no_dp)", label="BB")
+plot(1:number_of_instances, objectives[:,1], ylabel="objective", xlabel="instance", title="objectives for k=$k, $(number_of_instances) instances of size $(no_sp)x$(no_dp)", label="BB")
 plot!(1:number_of_instances, objectives[:,2], label="iter")
 plot!(1:number_of_instances, objectives[:,3], label="Box")
 if length(maxit_bb) > 0

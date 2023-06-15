@@ -1,0 +1,157 @@
+using JuMP, Gurobi
+const GRB_ENV_box = Gurobi.Env()
+
+"""
+    solve_boxes(K, loc_i, loc_J, W, D, pc)
+
+Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
+"""
+function solve_boxes(K::Int, inst::AllocationInstance)
+    time_start = now()
+    runtime = 0
+
+    scenario_modell = build_scenario_based_boxes(inst, K)
+    theta, x, y, s, xi = solve_scenario_based_boxes(scenario_modell, time_start)
+
+    separation_modell = build_separation_problem_boxes(inst, K, xi, time_start)
+    zeta, d = solve_separation_problem_boxes(separation_modell, time_start)
+    iteration = 0 # iteration counter
+
+    while zeta > 10^(-6) && (runtime <= 240)
+        iteration = iteration + 1
+
+        scenario_modell = update_scenario_based_box(scenario_modell, K, d)
+        # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
+        theta, x, y, s, xi = solve_scenario_based_boxes(scenario_modell, time_start)
+
+        # find violations
+        separation_modell = update_separation_problem_box(separation_modell, xi)
+        zeta, d = solve_separation_problem_boxes(separation_modell, time_start)
+        runtime = (now()-time_start).value/1000
+    end
+    
+    return x, y, s, xi, theta, iteration, runtime
+
+end
+
+"""
+    build_scenario_based_boxes(inst, K)
+
+Build the scenario-based K_adaptable problem.
+"""
+function build_scenario_based_boxes(inst::AllocationInstance, K::Int)
+    loc_I = inst.loc_I
+    loc_J = inst.loc_J
+    I = size(loc_I, 1)
+    J = size(loc_J, 1)
+    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
+    D = inst.D
+    pc = inst.pc
+    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
+    # coefficient for slack variables in objective
+    slack_coeff = 10*max(c...)
+
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
+    set_optimizer_attribute(rm, "OutputFlag", 0)
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(rm, time_remaining)
+
+    @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
+    @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
+    @variable(rm, 0 <= s[1:J, 1:K] <= D, Int)       # One set of variables per cell
+    @variable(rm, 0 <= ξ[1:J, 1:K] <= D)            # Worst-case scenarios for each box 
+    @variable(rm, v[1:1, 1:K], Bin)                 # which box does scenario t belong to
+    
+    @constraint(rm, sum(w[i] for i in 1:I) <= W)                    # supply limit
+    @constraint(rm, [i=1:I,k=1:K], sum(q[i,j,k] for j in 1:J) <= w[i])    # service point limit
+        
+    @variable(rm, 0 <= obj <= 10^10)                        # The objective function will be the maximum of the objective function across all the cells
+    @variable(rm, 0<= z[1:K]<=10^10)                        # A variable to track each cells objective value
+    @objective(rm, Min, obj)
+        
+    # Constrain objective function for this cell
+    @constraint(rm, [k=1:K], z[k] >= slack_coeff*sum(s[j,k] for j in 1:J) + sum(c[i,j]*q[i,j,k] for i in 1:I, j in 1:J))
+    @constraint(rm, [k=1:K], obj >= z[k])
+
+    # Demand 
+    @constraint(rm, [j=1:J, k=1:K], sum(q[i,j,k] for i in 1:I)+s[j,k] >= ξ[j,k])
+
+    return rm
+end
+
+function update_scenario_based_box(scenario_model, K::Int, scenario)
+
+    t = length(v)+1
+    for k in 1:K
+        push!(v, @variable(scenario_model, binary=true, base_name = "v[$t,$k]"))
+    end
+
+    @constraint(scenario_model, sum(v[t,k] for k=1:K) >= 1)        # every demand scenario must be covered by at least one plan
+    @constraint(scenario_model, [j=1:J,k=1:K], scenario[j]*v[t,k] <= ξ[j,k])   # if plan k covers scenario tau[t], it must be componentwise larger
+
+    return scenario_model
+end
+
+function solve_scenario_based_box(scenario_model, time_start)
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(rm, time_remaining)
+    # solve
+    optimize!(scenario_model)
+    theta = getvalue(obj)
+    x = round.(Int,getvalue.(w))
+    y = round.(Int,getvalue.(q))
+    s = round.(Int,getvalue.(s))
+    xi = getvalue.(ξ)
+    return theta, x, y, s, xi
+end
+######################################################################################################################################
+function build_separation_problem_boxes(inst::AllocationInstance, K::Int, ξ_value, time_start)
+
+    loc_J = inst.loc_J
+    J = size(loc_J, 1)
+    D = inst.D
+    pc = inst.pc
+    us = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
+    set_optimizer_attribute(us, "OutputFlag", 0)
+    
+    @variable(us, zeta)     # amount of violation
+    @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
+    @variable(us, z[1:K,1:J], Bin)   # violation indicator
+    @variable(us, xi[1:J, 1:K])
+    fix.(xi, ξ_value; force = true)
+
+    # d must be in the uncertainty set
+    @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
+    for (j1,j2) in Iterators.product(1:J,1:J)   # clustering of demand
+        @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
+    end
+
+    M = 2*D+1
+    @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
+    #@constraint(us, [k=1:K, j=1:J], zeta + ξ[j,k] <= d[j]*z[k,j])
+    @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] - ξ[j,k])
+
+    @objective(us, Max, zeta)
+    return us
+end
+
+function update_separation_problem_box(sepmodel, ξ_val)
+
+    fix.(xi, ξ_val; force = true)
+    return sepmodel
+end
+
+function solve_separation_problem_boxes(sepmodel, time_start)    
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(sepmodel, time_remaining)
+
+    optimize!(sepmodel)
+
+    return round.(value.(zeta), digits = 4), round.(value.(d), digits = 2)
+end

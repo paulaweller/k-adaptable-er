@@ -6,13 +6,13 @@ const GRB_ENV_box = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_boxes(K, loc_I, loc_J, W, D, pc)
+function solve_boxes(K::Int, inst::AllocationInstance)
     time_start = now()
     runtime = 0
     tau = []            # set of scenarios 
 
-    theta, x, y, s, xi = solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K, time_start)
-    zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi, time_start)
+    theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
+    zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start)
     iteration = 0 # iteration counter
 
     
@@ -21,10 +21,10 @@ function solve_boxes(K, loc_I, loc_J, W, D, pc)
         push!(tau, d)
 
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
-        theta, x, y, s, xi = solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K, time_start)
+        theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
 
         # find violations
-        zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi)
+        zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start)
         runtime = (now()-time_start).value/1000
     end
     
@@ -33,13 +33,18 @@ function solve_boxes(K, loc_I, loc_J, W, D, pc)
 end
 
 """
-    solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K)
+    solve_scenario_based_boxes(tau, inst, K, starttime)
 
 Solve the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K)
+function solve_scenario_based_boxes(tau, inst::AllocationInstance, K::Int, time_start)
+    loc_I = inst.loc_I
+    loc_J = inst.loc_J
     I = size(loc_I, 1)
     J = size(loc_J, 1)
+    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
+    D = inst.D
+    pc = inst.pc
     T = length(tau)
     c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     # coefficient for slack variables in objective
@@ -86,9 +91,12 @@ function solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K)
     return theta, x, y, s, xi
 end
 
-function solve_separation_problem_boxes(loc_J, D, pc, K, ξ)
+function solve_separation_problem_boxes(inst::AllocationInstance, K::Int, ξ, time_start)
 
+    loc_J = inst.loc_J
     J = size(loc_J, 1)
+    D = inst.D
+    pc = inst.pc
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
     set_optimizer_attribute(us, "OutputFlag", 0)
     # calculate remaining time before cutoff

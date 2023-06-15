@@ -7,21 +7,21 @@ const GRB_ENV_box = Gurobi.Env()
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
 function solve_boxes(K, loc_I, loc_J, W, D, pc)
-
-    tau = []            # set of scenarios 
-    
-    theta, x, y, s, xi = solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K)
-    zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi)
-    iteration = 0 # iteration counter
-
     time_start = now()
     runtime = 0
+    tau = []            # set of scenarios 
+
+    theta, x, y, s, xi = solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K, time_start)
+    zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi, time_start)
+    iteration = 0 # iteration counter
+
+    
     while zeta > 10^(-6) && (runtime <= 240)
         iteration = iteration + 1
         push!(tau, d)
 
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
-        theta, x, y, s, xi = solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K)
+        theta, x, y, s, xi = solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K, time_start)
 
         # find violations
         zeta, d = solve_separation_problem_boxes(loc_J, D, pc, K, xi)
@@ -47,6 +47,10 @@ function solve_scenario_based_boxes(tau, loc_I, loc_J, W, D, K)
 
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
     set_optimizer_attribute(rm, "OutputFlag", 0)
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(rm, time_remaining)
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -87,6 +91,10 @@ function solve_separation_problem_boxes(loc_J, D, pc, K, ξ)
     J = size(loc_J, 1)
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
     set_optimizer_attribute(us, "OutputFlag", 0)
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(us, time_remaining)
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?

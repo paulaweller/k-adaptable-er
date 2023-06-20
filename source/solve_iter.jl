@@ -32,19 +32,19 @@ function solve_partitioned_problem(inst::AllocationInstance,
     I = size(inst.loc_I, 1)
     J = size(inst.loc_J, 1)
 
-    # calculate edge cost from euclidian distances of demand points
-    c = reshape([norm(inst.loc_I[i,:]-inst.loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
-
-    # coefficient for slack variables in objective
-    c_slack = 10*max(c...)
     # scenario_tree is a vector containing every scenario in the tree
     # We will have one cell for every leaf scenario in the tree
     leaf_scenarios = filter(is_leaf, scenario_tree)
     P = length(leaf_scenarios)  # Number of cells
 
     # Initialize the RO model
-    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter))
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter); add_bridges = false)
     set_silent(rm)
+    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+
+    @expression(rm, c[i=1:I,j=1:J], norm(inst.loc_I[i,:]-inst.loc_J[j,:])); # transportation costs
+    @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
+
     # Decision variables:
     # First stage, here-and-now decision where to store supplies
     @variable(rm, 0 <= w[1:I] <= inst.W, Int)
@@ -64,7 +64,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     @objective(rm, Min, obj+0.1*sum(z[i] for i in 1:P))
 
     # Constrain objective function for cells
-    @constraint(rm, [p=1:P], z[p] >= c_slack*sum(s[j,p] for j in 1:J) + sum(c[i,j]*q[i,j,p] for i in 1:I, j in 1:J))
+    @constraint(rm, [p=1:P], z[p] >= slack_coeff*sum(s[j,p] for j in 1:J) + sum(c[i,j]*q[i,j,p] for i in 1:I, j in 1:J))
     @constraint(rm, [p=1:P], obj >= z[p])
 
     # service point limit
@@ -125,8 +125,9 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int
     J = size(loc_J,1)
     leaf_scenarios = filter(is_leaf, scenario_tree)
     # Define the separation model
-    sm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter))
+    sm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter); add_bridges = false)
     set_silent(sm)
+    #set_string_names_on_creation(sm, false) # disable string names for performance improvement
     # variables
     @variable(sm, 0 <= d[1:J] <= D)
     # bound on aggregated demand

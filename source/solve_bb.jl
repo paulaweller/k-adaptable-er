@@ -95,18 +95,15 @@ function solve_scenario_based(tau, inst, time_start)
     I = size(loc_I, 1)
     J = size(loc_J, 1)
     K = length(tau)
-    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     W = inst.W
     D = inst.D
-    # coefficient for slack variables in objective
-    slack_coeff = 10*max(c...)
 
-    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb))
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(rm, time_remaining)
+    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+
+    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
+    @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -133,6 +130,10 @@ function solve_scenario_based(tau, inst, time_start)
         end
  
     end
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(rm, max(time_remaining,0))
 
     # solve
     optimize!(rm)
@@ -150,16 +151,12 @@ function solve_separation_problem_general(y, s, inst, time_start)
     I = size(loc_I, 1)
     J = size(loc_J, 1)
     K = size(y, 3)
-    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     D = inst.D
     pc = inst.pc
     
-    us = Model(() -> Gurobi.Optimizer(GRB_ENV_bb))
+    us = Model(() -> Gurobi.Optimizer(GRB_ENV_bb); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(us, time_remaining)
+    #set_string_names_on_creation(us, false) # disable string names for performance improvement
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
@@ -171,12 +168,17 @@ function solve_separation_problem_general(y, s, inst, time_start)
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
     end
 
-    M = 2*D+1
+    @expression(us, M, 2*D+1)
     @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
     #@constraint(us, [k=1:K], zeta + M*z[k,0] <= M + slack_coeff*sum(s[j,k] for j in 1:J) + sum(c[i,j]*y[i,j,k] for i in 1:I, j in 1:J) - theta) #don't need this because objective coeffs are certain
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] -( sum(y[i,j,k] for i in 1:I)+s[j,k]))
 
     @objective(us, Max, zeta)
+
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(us, max(0,time_remaining))
     optimize!(us)
 
     return round.(value.(zeta), digits = 4), round.(value.(d), digits = 2)

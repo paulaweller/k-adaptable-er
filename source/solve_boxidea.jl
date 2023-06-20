@@ -16,15 +16,15 @@ function solve_boxes(K::Int, inst::AllocationInstance)
     iteration = 0 # iteration counter
 
     
-    while zeta > 10^(-6) && (runtime <= 240)
+    while zeta > 10^(-6) && (runtime <= 240) && iteration < 10
         iteration = iteration + 1
-        push!(tau, d)
+        @show push!(tau, d)
 
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
 
         # find violations
-        zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start)
+        @show zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start)
         runtime = (now()-time_start).value/1000
     end
     
@@ -42,16 +42,18 @@ function solve_scenario_based_boxes(tau, inst::AllocationInstance, K::Int, time_
     loc_J = inst.loc_J
     I = size(loc_I, 1)
     J = size(loc_J, 1)
-    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     D = inst.D
     pc = inst.pc
     W = inst.W
     T = length(tau)
-    # coefficient for slack variables in objective
-    slack_coeff = 10*max(c...)
 
-    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
+    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+
+    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
+    @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
+
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -97,8 +99,9 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int, ξ, ti
     J = size(loc_J, 1)
     D = inst.D
     pc = inst.pc
-    us = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
+    us = Model(() -> Gurobi.Optimizer(GRB_ENV_box); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
+    #set_string_names_on_creation(us, false) # disable string names for performance improvement
     
 
     @variable(us, zeta)     # amount of violation
@@ -111,7 +114,7 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int, ξ, ti
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
     end
 
-    M = 2*D+1
+    @expression(us, M, 2*D+1)
     @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
     #@constraint(us, [k=1:K, j=1:J], zeta + ξ[j,k] <= d[j]*z[k,j])
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] - ξ[j,k])

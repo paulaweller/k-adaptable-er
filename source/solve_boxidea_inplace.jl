@@ -44,15 +44,18 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int)
     loc_J = inst.loc_J
     I = size(loc_I, 1)
     J = size(loc_J, 1)
-    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
+    #c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     D = inst.D
     pc = inst.pc
     W = inst.W
-    # coefficient for slack variables in objective
-    slack_coeff = 10*max(c...)
+    
 
-    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace))
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
+    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+
+    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
+    @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -111,8 +114,9 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int, ξ_value
     J = size(loc_J, 1)
     D = inst.D
     pc = inst.pc
-    us = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace))
+    us = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
+    #set_string_names_on_creation(us, false) # disable string names for performance improvement
     
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
@@ -126,7 +130,7 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int, ξ_value
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
     end
 
-    M = 2*D+1
+    @expression(us, M, 2*D+1)
     @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
     #@constraint(us, [k=1:K, j=1:J], zeta + ξ[j,k] <= d[j]*z[k,j])
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] - xi[j,k])

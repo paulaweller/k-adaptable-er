@@ -34,7 +34,7 @@ function solve_bb_inplace(K, inst)
         # calculate remaining time before cutoff
         time_remaining = 240 + (time_start - now()).value/1000
         # set solver time limit accordingly
-        set_time_limit_sec(scenario_based_model, time_remaining)
+        set_time_limit_sec(scenario_based_model, max(time_remaining,0))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s = solve_scenario_based_inplace(scenario_based_model)
         #println("theta = $(theta), theta_i = $(theta_i)")
@@ -44,7 +44,7 @@ function solve_bb_inplace(K, inst)
             #calculate remaining time before cutoff
             time_remaining = 240 + (time_start - now()).value/1000
             # set solver time limit accordingly
-            set_time_limit_sec(separation_model, time_remaining)
+            set_time_limit_sec(separation_model, max(0,time_remaining))
             #(ζ, \xi, z)$ = Solve Separation Problem (8): max $ζ$ where $ζ$ is the amount of violation of the uncertain constraints and $\xi$ is the scenario that leads to violation
             zeta, xi = solve_separation_problem_inplace(separation_model)
             #println("separation problem solved, worst case scenario xi = $(xi)")
@@ -107,15 +107,16 @@ function build_scenario_based(inst::AllocationInstance, K::Int)
     loc_J = inst.loc_J
     I = size(loc_I, 1)
     J = size(loc_J, 1)
-    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
+    #c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     W = inst.W
     D = inst.D
 
-    # coefficient for slack variables in objective
-    slack_coeff = 10*max(c...)
-
-    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb_inplace))  # create model, reuse gurobi environment
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb_inplace); add_bridges = false)  # create model, reuse gurobi environment
     set_optimizer_attribute(rm, "OutputFlag", 0)    # no gurobi output
+    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+
+    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
+    @expression(rm, slack_coeff, 10*max(c...))    # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -170,12 +171,12 @@ function build_separation_problem(K, inst)
     loc_J = inst.loc_J
     I = size(loc_I, 1)
     J = size(loc_J, 1)
-    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     D = inst.D
     pc = inst.pc
     
-    us = Model(() -> Gurobi.Optimizer(GRB_ENV_bb_inplace))
+    us = Model(() -> Gurobi.Optimizer(GRB_ENV_bb_inplace); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
+    #set_string_names_on_creation(us, false) # disable string names for performance improvement
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
@@ -191,7 +192,7 @@ function build_separation_problem(K, inst)
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
     end
 
-    M = 2*D+1
+    @expression(us, M, 2*D+1)
     # only one (the worst) violated j for every k
     @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
     # zeta measures the smallest violation among the k

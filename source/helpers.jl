@@ -1,5 +1,5 @@
-using LinearAlgebra, StatsPlots, Dates, Random, Statistics
-
+using LinearAlgebra, Dates, Random, Statistics
+#StatsPlots,
 mutable struct AllocationInstance
     loc_I::Matrix{Int64}
     loc_J::Matrix{Int64}

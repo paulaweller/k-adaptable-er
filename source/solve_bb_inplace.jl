@@ -113,7 +113,7 @@ function build_scenario_based(inst::AllocationInstance, K::Int)
 
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb_inplace); add_bridges = false)  # create model, reuse gurobi environment
     set_optimizer_attribute(rm, "OutputFlag", 0)    # no gurobi output
-    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+    set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
     @expression(rm, slack_coeff, 10*max(c...))    # coefficient for slack variables in objective
@@ -176,7 +176,7 @@ function build_separation_problem(K, inst)
     
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_bb_inplace); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
-    #set_string_names_on_creation(us, false) # disable string names for performance improvement
+    set_string_names_on_creation(us, false) # disable string names for performance improvement
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
@@ -212,5 +212,5 @@ end
 function solve_separation_problem_inplace(sep_model)
     # optimize model
     optimize!(sep_model)
-    return round.(value.(sep_model[:zeta]), digits = 4), round.(value.(sep_model[:d]), digits = 2)
+    return round.(value.(sep_model[:zeta]), digits = 4), ceil.(Int, value.(sep_model[:d]))#round.(value.(sep_model[:d]), digits = 2)
 end

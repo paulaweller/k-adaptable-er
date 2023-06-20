@@ -7,12 +7,12 @@ include("solve_boxidea.jl")
 include("solve_bb_inplace.jl")
 include("solve_boxidea_inplace.jl")
 
-number_of_instances = 10
+number_of_instances = 20
 times = zeros(number_of_instances, 5)
 objectives = zeros(number_of_instances,5)
 iterations = zeros(number_of_instances, 5)
 no_sp = 1
-no_dp = 3
+no_dp = 5
 k = 3
 io = open("results/main.txt", "w")
 write(io, "Solution times for $(no_sp) service points, $(no_dp) demand points, k=$(k)\norder: [BB, BB in place, box, box in place, iter]\n")
@@ -75,7 +75,7 @@ maxit_box_ip = findall(x-> x>240, times[:,4])
 
 
 plot(1:number_of_instances, times, 
-        label = ["BB" "BB_ip" "Box" "Box_ip" "iter"]
+        label = ["BB" "BB_ip" "Box" "Box_ip" "iter"],
         ylabel="seconds", 
         xlabel="instance", 
         title="comp times for k=$k, $(number_of_instances) instances of size $(no_sp)x$(no_dp)")
@@ -88,8 +88,8 @@ plot(1:number_of_instances, times,
 # end
 savefig("results/times.png")
 
-plot(1:number_of_instances, objectives[:,1], 
-        label = ["BB" "BB_ip" "Box" "Box_ip" "iter"]
+plot(1:number_of_instances, objectives, 
+        label = ["BB" "BB_ip" "Box" "Box_ip" "iter"],
         ylabel="objective", 
         xlabel="instance", 
         title="objectives for k=$k, $(number_of_instances) instances of size $(no_sp)x$(no_dp)")

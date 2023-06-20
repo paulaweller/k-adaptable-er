@@ -1,11 +1,12 @@
 using Gurobi, JuMP
 
 function create_model()
-    model = Model(Gurobi.Optimizer)
-
+    model = Model()
+    set_string_names_on_creation(model, false)
     #@variable(model, x[1:2,1:3])
 
-    x = model[:x] = @variable(model, [1:1,1:3], base_name = "x")
+    #x = model[:x] = 
+    @variable(model, x[1:1,1:3])
 
     @constraint(model, demi[i=1:2], x[i]+x[i+1] <= 10)
 
@@ -24,6 +25,3 @@ function modify_model(model)
 end
 
 modeli = create_model()
-
-modify_model(modeli)
-modify_model(modeli)

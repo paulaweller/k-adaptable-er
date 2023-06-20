@@ -20,7 +20,7 @@ function solve_boxes_inplace(K::Int, inst::AllocationInstance)
     while zeta > 10^(-6) && (runtime <= 240)
         iteration = iteration + 1
 
-        scenario_modell = update_scenario_based_box!(scenario_modell, K, d)
+        scenario_modell = update_scenario_based_box!(scenario_modell, K, ceil.(Int,d))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start)
 
@@ -52,7 +52,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int)
 
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
-    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+    set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
     @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
@@ -100,11 +100,11 @@ function solve_scenario_based_box(scenario_model, time_start)
     set_time_limit_sec(scenario_model, max(time_remaining,0))
     # solve
     optimize!(scenario_model)
-    theta = getvalue(scenario_model[:obj])
-    x = round.(Int,getvalue.(scenario_model[:w]))
-    y = round.(Int,getvalue.(scenario_model[:q]))
-    s = round.(Int,getvalue.(scenario_model[:s]))
-    xi = getvalue.(scenario_model[:ξ])
+    theta = value(scenario_model[:obj])
+    x = round.(Int,value.(scenario_model[:w]))
+    y = round.(Int,value.(scenario_model[:q]))
+    s = round.(Int,value.(scenario_model[:s]))
+    xi = value.(scenario_model[:ξ])
     return theta, x, y, s, xi
 end
 ######################################################################################################################################
@@ -116,7 +116,7 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int, ξ_value
     pc = inst.pc
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
-    #set_string_names_on_creation(us, false) # disable string names for performance improvement
+    set_string_names_on_creation(us, false) # disable string names for performance improvement
     
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?

@@ -100,7 +100,7 @@ function solve_scenario_based(tau, inst, time_start)
 
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
-    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+    set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
     @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
@@ -156,7 +156,7 @@ function solve_separation_problem_general(y, s, inst, time_start)
     
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_bb); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
-    #set_string_names_on_creation(us, false) # disable string names for performance improvement
+    set_string_names_on_creation(us, false) # disable string names for performance improvement
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
@@ -181,5 +181,5 @@ function solve_separation_problem_general(y, s, inst, time_start)
     set_time_limit_sec(us, max(0,time_remaining))
     optimize!(us)
 
-    return round.(value.(zeta), digits = 4), round.(value.(d), digits = 2)
+    return round.(value.(zeta), digits = 4), ceil.(Int, value.(d))#round.(value.(d), digits = 2)
 end

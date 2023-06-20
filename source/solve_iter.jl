@@ -40,7 +40,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     # Initialize the RO model
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter); add_bridges = false)
     set_silent(rm)
-    #set_string_names_on_creation(rm, false) # disable string names for performance improvement
+    set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
     @expression(rm, c[i=1:I,j=1:J], norm(inst.loc_I[i,:]-inst.loc_J[j,:])); # transportation costs
     @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
@@ -127,7 +127,7 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int
     # Define the separation model
     sm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter); add_bridges = false)
     set_silent(sm)
-    #set_string_names_on_creation(sm, false) # disable string names for performance improvement
+    set_string_names_on_creation(sm, false) # disable string names for performance improvement
     # variables
     @variable(sm, 0 <= d[1:J] <= D)
     # bound on aggregated demand

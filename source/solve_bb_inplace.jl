@@ -2,7 +2,7 @@ using JuMP, Gurobi
 const GRB_ENV_bb_inplace = Gurobi.Env()
 
 """
-    solve_bb_fast(K, inst)
+    solve_bb_inplace(K, inst)
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
@@ -21,7 +21,7 @@ function solve_bb_inplace(K, inst)
     it = 0              # iteration count
     
     scenario_based_model = build_scenario_based(inst, K)
-    separation_model = build_separation_problem(y,s, inst)
+    separation_model = build_separation_problem(K, inst)
 
     while (isempty(N) == false) && (runtime <= 240) # stop after 240 s
         it = it + 1
@@ -140,13 +140,16 @@ end
 function update_scenario_based(model, tau) 
     # Can't have constraints in place and just change rhs, 
     # because the number of constraints changes with tau and could be bigger or smaller than before.
-
+    
     # delete old demand constraints
-    delete.(model, demand_con)
+    delete.(model, model[:demand_con])
     unregister.(model, :demand_con)
 
+    K = length(tau)
+    J = size(model[:s],1)
+    I = size(model[:w],1)
     # add new demand constraints
-    @constraint(model, demand_con[k=1:K, xi=tau[k], j=1:J], sum(q[i,j,k] for i in 1:I)+s[j,k] >= xi[j])
+    @constraint(model, demand_con[k=1:K, xi=tau[k], j=1:J], sum(model[:q][i,j,k] for i in 1:I)+model[:s][j,k] >= xi[j])
     return model
 end
 
@@ -154,20 +157,19 @@ function solve_scenario_based_inplace(model)
     # solve model
     optimize!(model)
     theta = objective_value(model)
-    x = round.(Int, value.(w))
-    y = round.(Int, value.(q))
-    s = value.(s)
+    x = round.(Int, value.(model[:w]))
+    y = round.(Int, value.(model[:q]))
+    s = value.(model[:s])
     return theta, x, y, s
 end
 
 
-function build_separation_problem(y_value, s_value, inst)
+function build_separation_problem(K, inst)
     
     loc_I = inst.loc_I
     loc_J = inst.loc_J
     I = size(loc_I, 1)
     J = size(loc_J, 1)
-    K = size(y, 3)
     c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     D = inst.D
     pc = inst.pc
@@ -178,10 +180,10 @@ function build_separation_problem(y_value, s_value, inst)
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
     @variable(us, z[1:K,1:J], Bin)   # violation indicator
-    @variable(us, y[i,j,k] >= 0) #y-variable to be fixed to the current solution
-    fix.(y, y_value; force = true)
-    @variable(us, s[j,k] >= 0) #s-variable to be fixed to the current solution
-    fix.(s, s_value; force = true)
+    @variable(us, y[1:I,1:J,1:K] >= 0) #y-variable to be fixed to the current solution
+    #fix.(y, y_value; force = true)
+    @variable(us, s[1:J,1:K] >= 0) #s-variable to be fixed to the current solution
+    #fix.(s, s_value; force = true)
 
     # d must be in the uncertainty set
     @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
@@ -196,18 +198,18 @@ function build_separation_problem(y_value, s_value, inst)
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] -( sum(y[i,j,k] for i in 1:I)+s[j,k]))
 
     @objective(us, Max, zeta)
-    return 
+    return us
 end
 
 function update_separation_problem(sep_model, y_value,s_value)
     # fix variables y,s to current solution
-    fix.(y, y_value; force = true)
-    fix.(s, s_value; force = true)
+    fix.(sep_model[:y], y_value; force = true)
+    fix.(sep_model[:s], s_value; force = true)
     return sep_model
 end
 
 function solve_separation_problem_inplace(sep_model)
     # optimize model
     optimize!(sep_model)
-    return round.(value.(zeta), digits = 4), round.(value.(d), digits = 2)
+    return round.(value.(sep_model[:zeta]), digits = 4), round.(value.(sep_model[:d]), digits = 2)
 end

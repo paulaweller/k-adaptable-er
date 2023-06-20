@@ -2,7 +2,7 @@ using JuMP, Gurobi
 const GRB_ENV_box = Gurobi.Env()
 
 """
-    solve_boxes(K, loc_i, loc_J, W, D, pc)
+    solve_boxes(K, instance)
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
@@ -45,17 +45,13 @@ function solve_scenario_based_boxes(tau, inst::AllocationInstance, K::Int, time_
     c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     D = inst.D
     pc = inst.pc
+    W = inst.W
     T = length(tau)
-    c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     # coefficient for slack variables in objective
     slack_coeff = 10*max(c...)
 
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
     set_optimizer_attribute(rm, "OutputFlag", 0)
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(rm, time_remaining)
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -81,6 +77,10 @@ function solve_scenario_based_boxes(tau, inst::AllocationInstance, K::Int, time_
     @constraint(rm, [t=1:T], sum(v[t,k] for k=1:K) >= 1)        # every demand scenario must be covered by at least one plan
     @constraint(rm, [j=1:J,t=1:T,k=1:K], tau[t][j]*v[t,k] <= ξ[j,k])   # if plan k covers scenario tau[t], it must be componentwise larger
 
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(rm, max(time_remaining,0))
     # solve
     optimize!(rm)
     theta = getvalue(obj)
@@ -99,10 +99,7 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int, ξ, ti
     pc = inst.pc
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_box))
     set_optimizer_attribute(us, "OutputFlag", 0)
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(us, time_remaining)
+    
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
@@ -120,6 +117,11 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int, ξ, ti
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] - ξ[j,k])
 
     @objective(us, Max, zeta)
+
+    # calculate remaining time before cutoff
+    time_remaining = 240 + (time_start - now()).value/1000
+    # set solver time limit accordingly
+    set_time_limit_sec(us, max(time_remaining,0))
     optimize!(us)
 
     return round.(value.(zeta), digits = 4), round.(value.(d), digits = 2)

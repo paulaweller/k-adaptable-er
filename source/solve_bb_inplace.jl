@@ -15,7 +15,7 @@ function solve_bb_inplace(K, inst)
     N = [[Iterators.repeated([],K)...]]
     # the incumbent
     theta_i = 10^10     # objective value
-    x_i = []            # first-stage solution
+    x_i = Int64[]            # first-stage solution
     y_i = []            # second-stage solution
     s_i = []            # second-stage slack variables
     it = 0              # iteration count
@@ -25,60 +25,29 @@ function solve_bb_inplace(K, inst)
 
     while (isempty(N) == false) && (runtime <= 240) # stop after 240 s
         it = it + 1
-        #println("number of unexplored nodes: $(length(N))")
-        # select unexplored node (TODO: which one to select?)
-        # and delete from set of unexplored nodes
+        # select unexplored node (TODO: which one to select?) and delete from set of unexplored nodes
         tau = popfirst!(N)
         # update model
-        scenario_based_model = update_scenario_based(scenario_based_model, tau)
-        # calculate remaining time before cutoff
-        time_remaining = 240 + (time_start - now()).value/1000
-        # set solver time limit accordingly
-        set_time_limit_sec(scenario_based_model, max(time_remaining,0))
+        scenario_based_model = update_scenario_based!(scenario_based_model, tau)
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
-        theta, x, y, s = solve_scenario_based_inplace(scenario_based_model)
-        #println("theta = $(theta), theta_i = $(theta_i)")
+        theta, x, y, s = solve_scenario_based_inplace(scenario_based_model, time_start)
+
         if theta < theta_i
             # update separation problem
-            separation_model = update_separation_problem(separation_model, y, s)
-            #calculate remaining time before cutoff
-            time_remaining = 240 + (time_start - now()).value/1000
-            # set solver time limit accordingly
-            set_time_limit_sec(separation_model, max(0,time_remaining))
+            separation_model = update_separation_problem!(separation_model, y, s)
             #(ζ, \xi, z)$ = Solve Separation Problem (8): max $ζ$ where $ζ$ is the amount of violation of the uncertain constraints and $\xi$ is the scenario that leads to violation
-            zeta, xi = solve_separation_problem_inplace(separation_model)
+            zeta, xi = solve_separation_problem_inplace(separation_model, time_start)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
             if zeta <= 10^(-6) # no violations
-
-                #$(θ^i, x^i, y^i) ← (θ, x, y)$
-                theta_i = copy(theta)
-                x_i = copy(x)
-                y_i = copy(y)
-                s_i = copy(s)
-
+                # update incumbent
+                theta_i = theta
+                x_i = x
+                y_i = y
+                s_i = s
             else
-                # Knew child nodes
-                # sort the partition by size of the subsets
-                sort!(tau, by= x-> size(x), rev = true)
-                #define Knew the first empty subset
-                if isempty(tau[end]) 
-                    Knew = findfirst(x-> isempty(x), tau)
-                else
-                    Knew = K
-                end
-                for k in 1:Knew
-                    # each child node is the current uncset configuration...
-                    tau_temp = copy(tau)
-                    # ...with the new scenario added to uncset number k
-                    tau_temp[k] = union(tau_temp[k], [xi])
-                    #push!(tau_temp[k], xi)
-                    N = union(N, [copy(tau_temp)])
-                    
-                    #push!(N, copy(tau_temp))   
-                end
-                #println("N updated, N = $N")
-
+                Knew = number_of_childnodes(tau)
+                N = branch_partition!(N, tau, xi, Knew)
             end
 
         end
@@ -86,13 +55,9 @@ function solve_bb_inplace(K, inst)
     end
     
     if theta_i == 10^10
-
         return "infeasible"
-
     else
-
         return x_i, y_i, s_i, theta_i, it, runtime
-
     end
 end
 
@@ -101,7 +66,7 @@ end
 
 Create the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function build_scenario_based(inst::AllocationInstance, K::Int)
+function build_scenario_based(inst, K)
 
     loc_I = inst.loc_I
     loc_J = inst.loc_J
@@ -138,7 +103,7 @@ function build_scenario_based(inst::AllocationInstance, K::Int)
     return rm
 end
 
-function update_scenario_based(model, tau) 
+function update_scenario_based!(model, tau) 
     # Can't have constraints in place and just change rhs, 
     # because the number of constraints changes with tau and could be bigger or smaller than before.
     
@@ -154,7 +119,8 @@ function update_scenario_based(model, tau)
     return model
 end
 
-function solve_scenario_based_inplace(model)
+function solve_scenario_based_inplace(model, time)
+    set_remaining_time(model, time)
     # solve model
     optimize!(model)
     theta = objective_value(model)
@@ -202,14 +168,15 @@ function build_separation_problem(K, inst)
     return us
 end
 
-function update_separation_problem(sep_model, y_value,s_value)
+function update_separation_problem!(sep_model, y_value,s_value)
     # fix variables y,s to current solution
     fix.(sep_model[:y], y_value; force = true)
     fix.(sep_model[:s], s_value; force = true)
     return sep_model
 end
 
-function solve_separation_problem_inplace(sep_model)
+function solve_separation_problem_inplace(sep_model, time)
+    set_remaining_time(sep_model, time)
     # optimize model
     optimize!(sep_model)
     return round.(value.(sep_model[:zeta]), digits = 4), ceil.(Int, value.(sep_model[:d]))#round.(value.(sep_model[:d]), digits = 2)

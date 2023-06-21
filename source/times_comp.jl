@@ -3,9 +3,9 @@ using LinearAlgebra, Plots
 include("helpers.jl")
 include("solve_iter.jl")
 include("solve_bb.jl")
-include("solve_boxidea.jl")
+include("solve_boxes.jl")
 include("solve_bb_inplace.jl")
-include("solve_boxidea_inplace.jl")
+include("solve_boxes_inplace.jl")
 
 number_of_instances = 20
 times = zeros(number_of_instances, 5)

@@ -39,33 +39,14 @@ function solve_bb_general(K, inst)
             if zeta <= 10^(-6) # no violations
 
                 #$(θ^i, x^i, y^i) ← (θ, x, y)$
-                theta_i = copy(theta)
-                x_i = copy(x)
-                y_i = copy(y)
-                s_i = copy(s)
+                theta_i = theta
+                x_i = x
+                y_i = y
+                s_i = s
 
             else
-                # Knew child nodes
-                # sort the partition by size of the subsets
-                sort!(tau, by= x-> size(x), rev = true)
-                #define Knew the first empty subset
-                if isempty(tau[end]) 
-                    Knew = findfirst(x-> isempty(x), tau)
-                else
-                    Knew = K
-                end
-                for k in 1:Knew
-                    # each child node is the current uncset configuration...
-                    tau_temp = copy(tau)
-                    # ...with the new scenario added to uncset number k
-                    tau_temp[k] = union(tau_temp[k], [xi])
-                    #push!(tau_temp[k], xi)
-                    N = union(N, [copy(tau_temp)])
-                    
-                    #push!(N, copy(tau_temp))   
-                end
-                #println("N updated, N = $N")
-
+                Knew = number_of_childnodes(tau)
+                N = branch_partition!(N, tau, xi, Knew)
             end
 
         end
@@ -130,11 +111,7 @@ function solve_scenario_based(tau, inst, time_start)
         end
  
     end
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(rm, max(time_remaining,0))
-
+    set_remaining_time(rm, time_start)
     # solve
     optimize!(rm)
     theta = objective_value(rm)
@@ -175,10 +152,7 @@ function solve_separation_problem_general(y, s, inst, time_start)
 
     @objective(us, Max, zeta)
 
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(us, max(0,time_remaining))
+    set_remaining_time(us, time_start)
     optimize!(us)
 
     return round.(value.(zeta), digits = 4), ceil.(Int, value.(d))#round.(value.(d), digits = 2)

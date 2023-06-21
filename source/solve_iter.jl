@@ -94,7 +94,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     # Extend the scenario tree
     for p in 1:P
         # if this cell's objective equals the worst cell's objective...
-        if abs(value(z[p]) - value(obj)) < 1/10^16
+        if abs(value(z[p]) - value(obj)) < 10^-6
             for j in 1:J
                 # Extract the active uncertain parameter values
                 demand_scen = worst_case_scenarios[J*(p-1)+j]

@@ -6,7 +6,7 @@ const GRB_ENV_box_inplace = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_boxes_inplace(K::Int, inst::AllocationInstance)
+function solve_boxes_inplace(K, inst)
     time_start = now()
     runtime = 0
 
@@ -39,17 +39,15 @@ end
 
 Build the scenario-based K_adaptable problem.
 """
-function build_scenario_based_box(inst::AllocationInstance, K::Int)
+function build_scenario_based_box(inst, K)
     loc_I = inst.loc_I
     loc_J = inst.loc_J
     I = size(loc_I, 1)
     J = size(loc_J, 1)
-    #c = reshape([norm(loc_I[i,:]-loc_J[j,:]) for j in 1:J for i in 1:I],I,J)
     D = inst.D
     pc = inst.pc
     W = inst.W
     
-
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
@@ -80,7 +78,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int)
     return rm
 end
 
-function update_scenario_based_box!(scenario_model, K::Int, scenario)
+function update_scenario_based_box!(scenario_model, K, scenario)
 
     t = size(scenario_model[:v],1)+1
     J = size(scenario_model[:s],1)
@@ -94,11 +92,7 @@ function update_scenario_based_box!(scenario_model, K::Int, scenario)
 end
 
 function solve_scenario_based_box(scenario_model, time_start)
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(scenario_model, max(time_remaining,0))
-    # solve
+    set_remaining_time(scenario_model, time_start)
     optimize!(scenario_model)
     theta = value(scenario_model[:obj])
     x = round.(Int,value.(scenario_model[:w]))
@@ -108,7 +102,7 @@ function solve_scenario_based_box(scenario_model, time_start)
     return theta, x, y, s, xi
 end
 ######################################################################################################################################
-function build_separation_problem_box(inst::AllocationInstance, K::Int, ξ_value)
+function build_separation_problem_box(inst, K, ξ_value)
 
     loc_J = inst.loc_J
     J = size(loc_J, 1)
@@ -140,18 +134,12 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int, ξ_value
 end
 
 function update_separation_problem_box!(sepmodel, ξ_val)
-
     fix.(sepmodel[:xi], ξ_val; force = true)
     return sepmodel
 end
 
 function solve_separation_problem_box(sepmodel, time_start)    
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(sepmodel, max(time_remaining,0))
-
+    set_remaining_time(sepmodel, time_start)
     optimize!(sepmodel)
-
     return round.(value.(sepmodel[:zeta]), digits = 4), round.(value.(sepmodel[:d]), digits = 2)
 end

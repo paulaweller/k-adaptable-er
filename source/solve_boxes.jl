@@ -6,7 +6,7 @@ const GRB_ENV_box = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_boxes(K::Int, inst::AllocationInstance)
+function solve_boxes(K, inst)
     time_start = now()
     runtime = 0
     tau = []            # set of scenarios 
@@ -16,7 +16,7 @@ function solve_boxes(K::Int, inst::AllocationInstance)
     iteration = 0 # iteration counter
 
     
-    while zeta > 10^(-6) && (runtime <= 240) && iteration < 10
+    while zeta > 10^(-6) && (runtime <= 240)
         iteration = iteration + 1
         push!(tau, ceil.(Int, d))
 
@@ -37,13 +37,12 @@ end
 
 Solve the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function solve_scenario_based_boxes(tau, inst::AllocationInstance, K::Int, time_start)
+function solve_scenario_based_boxes(tau, inst, K, time_start)
     loc_I = inst.loc_I
     loc_J = inst.loc_J
     I = size(loc_I, 1)
     J = size(loc_J, 1)
     D = inst.D
-    pc = inst.pc
     W = inst.W
     T = length(tau)
 
@@ -79,10 +78,7 @@ function solve_scenario_based_boxes(tau, inst::AllocationInstance, K::Int, time_
     @constraint(rm, [t=1:T], sum(v[t,k] for k=1:K) >= 1)        # every demand scenario must be covered by at least one plan
     @constraint(rm, [j=1:J,t=1:T,k=1:K], tau[t][j]*v[t,k] <= ξ[j,k])   # if plan k covers scenario tau[t], it must be componentwise larger
 
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(rm, max(time_remaining,0))
+    set_remaining_time(rm, time_start)
     # solve
     optimize!(rm)
     theta = value(obj)
@@ -93,7 +89,7 @@ function solve_scenario_based_boxes(tau, inst::AllocationInstance, K::Int, time_
     return theta, x, y, s, xi
 end
 
-function solve_separation_problem_boxes(inst::AllocationInstance, K::Int, ξ, time_start)
+function solve_separation_problem_boxes(inst, K, ξ, time_start)
 
     loc_J = inst.loc_J
     J = size(loc_J, 1)
@@ -121,10 +117,7 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int, ξ, ti
 
     @objective(us, Max, zeta)
 
-    # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
-    # set solver time limit accordingly
-    set_time_limit_sec(us, max(time_remaining,0))
+    set_remaining_time(us, time_start)
     optimize!(us)
 
     return round.(value.(zeta), digits = 4), round.(value.(d), digits = 2)

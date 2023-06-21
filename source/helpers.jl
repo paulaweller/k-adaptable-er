@@ -1,11 +1,11 @@
 using LinearAlgebra, Dates, Random, Statistics
 #StatsPlots,
-mutable struct AllocationInstance
-    loc_I
-    loc_J
-    W
-    D
-    pc
+struct AllocationInstance
+    loc_I::Array{Int64,2}
+    loc_J::Array{Int64,2}
+    W::Int64
+    D::Int64
+    pc::Float64
 end
 #const GRB_ENV = Gurobi.Env()
 """
@@ -72,14 +72,14 @@ function generate_instance(I_inst, J_inst, seed; demand_bound=5, cont_perc=0.5, 
     return instance
 end
 
-function set_remaining_time(model, time_start)
+function set_remaining_time(model::Model, time_start::DateTime)
     # calculate remaining time before cutoff
     time_remaining = 240 + (time_start - now()).value/1000
     # set solver time limit accordingly
     set_time_limit_sec(model, max(time_remaining,0))
 end
 
-function branch_partition!(N, tau, xi, knew)
+function branch_partition!(N::Vector{Vector{Vector{Vector{Int64}}}}, tau::Vector{Vector{Vector{Int64}}}, xi::Array{Int64,1}, knew::Int64)
     for k in 1:knew
         # each child node is the current uncset configuration...
         tau_temp = copy(tau)
@@ -92,7 +92,7 @@ function branch_partition!(N, tau, xi, knew)
     nothing #return N
 end
 
-function number_of_childnodes(tau)
+function number_of_childnodes(tau::Vector{Vector{Vector{Int64}}})
     # sort the partition by size of the subsets
     sort!(tau, by= x-> size(x), rev = true)
     #define Knew the first empty subset

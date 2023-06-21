@@ -23,10 +23,10 @@ k = 3
 
 #@show x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_boxes(k, inst_gen)
 
-@show x_box2, y_box2, s_box2, xi_box2, theta_box2, it_box2, runtime_box2 = solve_boxes_inplace(k, inst_gen)
+#@show x_box2, y_box2, s_box2, xi_box2, theta_box2, it_box2, runtime_box2 = solve_boxes_inplace(k, inst_gen)
 
 @show x_general, y_general, s_general, theta_general, it_general, runtime_general = solve_bb_general(k, inst_gen)
-
+#@code_warntype solve_bb_inplace(k, inst_gen)
 #@show x_gen2, y_gen2, s_gen2, theta_gen2, it_gen2, runtime_gen2 = solve_bb_inplace(k, inst_gen)
 nothing
 # x_diff = x_general - x_box

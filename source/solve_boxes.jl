@@ -6,20 +6,19 @@ const GRB_ENV_box = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_boxes(K, inst)
+function solve_boxes(K::Int64, inst::AllocationInstance)
     time_start = now()
-    runtime = 0
-    tau = []            # set of scenarios 
+    runtime = 0.0
+    tau = Vector{Int64}[]            # set of scenarios 
 
     theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
     zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start)
     iteration = 0 # iteration counter
 
     
-    while zeta > 10^(-6) && (runtime <= 240)
+    while zeta > 1e-6 && (runtime <= 240.0)
         iteration = iteration + 1
         push!(tau, ceil.(Int, d))
-
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
 
@@ -37,7 +36,7 @@ end
 
 Solve the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function solve_scenario_based_boxes(tau, inst, K, time_start)
+function solve_scenario_based_boxes(tau::Vector{Vector{Int64}}, inst::AllocationInstance, K::Int64, time_start::DateTime)
     loc_I = inst.loc_I
     loc_J = inst.loc_J
     I = size(loc_I, 2)
@@ -89,7 +88,7 @@ function solve_scenario_based_boxes(tau, inst, K, time_start)
     return theta, x, y, s, xi
 end
 
-function solve_separation_problem_boxes(inst, K, ξ, time_start)
+function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::Array{Int64,2}, time_start::DateTime)
 
     loc_J = inst.loc_J
     J = size(loc_J, 2)

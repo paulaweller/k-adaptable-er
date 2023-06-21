@@ -6,24 +6,23 @@ const GRB_ENV_bb_inplace = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_bb_inplace(K, inst)
+function solve_bb_inplace(K::Int64, inst::AllocationInstance)
     time_start = now()  # measure start of runtime
-    runtime = 0         # initiate variable for runtime
-
+    runtime = 0.0         # initiate variable for runtime
     # set of unexplored nodes, each node consists of K (disjoint) subsets of the uncertainty set
     # we start with K empty sets
-    N = [[Iterators.repeated([],K)...]]
+    N = [[Iterators.repeated(Vector{Int64}[],K)...]]    # N[a,b,c] = N[partition,subset,demandpoint]
     # the incumbent
-    theta_i = 10^10     # objective value
+    theta_i = 1e10     # objective value
     x_i = Int64[]            # first-stage solution
-    y_i = []            # second-stage solution
-    s_i = []            # second-stage slack variables
+    y_i = Array{Int64,3}            # second-stage solution
+    s_i = Array{Int64,2}            # second-stage slack variables
     it = 0              # iteration count
     
     scenario_based_model = build_scenario_based(inst, K)
     separation_model = build_separation_problem(K, inst)
 
-    while (isempty(N) == false) && (runtime <= 240) # stop after 240 s
+    while (isempty(N) == false) && (runtime <= 240.0) # stop after 240 s
         it = it + 1
         # select unexplored node (TODO: which one to select?) and delete from set of unexplored nodes
         unique!(N)
@@ -40,7 +39,7 @@ function solve_bb_inplace(K, inst)
             zeta, xi = solve_separation_problem_inplace(separation_model, time_start)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
-            if zeta <= 10^(-6) # no violations
+            if zeta <= 1e-6 # no violations
                 # update incumbent
                 theta_i = theta
                 x_i = x
@@ -55,7 +54,7 @@ function solve_bb_inplace(K, inst)
         runtime = (now()-time_start).value/1000
     end
     
-    if theta_i == 10^10
+    if theta_i == 1e10
         return "infeasible"
     else
         return x_i, y_i, s_i, theta_i, it, runtime
@@ -67,7 +66,7 @@ end
 
 Create the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function build_scenario_based(inst, K)
+function build_scenario_based(inst::AllocationInstance, K::Int64)
 
     loc_I = inst.loc_I
     loc_J = inst.loc_J
@@ -103,7 +102,7 @@ function build_scenario_based(inst, K)
     return rm
 end
 
-function update_scenario_based!(model, tau) 
+function update_scenario_based!(model::Model, tau::Vector{Vector{Vector{Int64}}}) 
     # Can't have constraints in place and just change rhs, 
     # because the number of constraints changes with tau and could be bigger or smaller than before.
     
@@ -119,7 +118,7 @@ function update_scenario_based!(model, tau)
     nothing #return model
 end
 
-function solve_scenario_based_inplace(model, time)
+function solve_scenario_based_inplace(model::Model, time::DateTime)
     set_remaining_time(model, time)
     # solve model
     optimize!(model)
@@ -131,7 +130,7 @@ function solve_scenario_based_inplace(model, time)
 end
 
 
-function build_separation_problem(K, inst)
+function build_separation_problem(K::Int64, inst::AllocationInstance)
     
     loc_I = inst.loc_I
     loc_J = inst.loc_J
@@ -168,14 +167,14 @@ function build_separation_problem(K, inst)
     return us
 end
 
-function update_separation_problem!(sep_model, y_value,s_value)
+function update_separation_problem!(sep_model::Model, y_value::Array{Int64, 3},s_value::Array{Int64,2})
     # fix variables y,s to current solution
     fix.(sep_model[:y], y_value; force = true)
     fix.(sep_model[:s], s_value; force = true)
     nothing #return sep_model
 end
 
-function solve_separation_problem_inplace(sep_model, time)
+function solve_separation_problem_inplace(sep_model::Model, time::DateTime)
     set_remaining_time(sep_model, time)
     # optimize model
     optimize!(sep_model)

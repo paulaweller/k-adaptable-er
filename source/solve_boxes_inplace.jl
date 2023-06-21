@@ -6,9 +6,9 @@ const GRB_ENV_box_inplace = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_boxes_inplace(K, inst)
+function solve_boxes_inplace(K::Int64, inst::AllocationInstance)
     time_start = now()
-    runtime = 0
+    runtime = 0.0
 
     scenario_modell = build_scenario_based_box(inst, K)
     theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start)
@@ -17,7 +17,7 @@ function solve_boxes_inplace(K, inst)
     zeta, d = solve_separation_problem_box(separation_modell, time_start)
     iteration = 0 # iteration counter
 
-    while zeta > 10^(-6) && (runtime <= 240)
+    while zeta > 1e-6 && (runtime <= 240.0)
         iteration = iteration + 1
 
         update_scenario_based_box!(scenario_modell, K, ceil.(Int,d))
@@ -39,7 +39,7 @@ end
 
 Build the scenario-based K_adaptable problem.
 """
-function build_scenario_based_box(inst, K)
+function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     loc_I = inst.loc_I
     loc_J = inst.loc_J
     I = size(loc_I, 2)
@@ -77,7 +77,7 @@ function build_scenario_based_box(inst, K)
     return rm
 end
 
-function update_scenario_based_box!(scenario_model, K, scenario)
+function update_scenario_based_box!(scenario_model::Model, K::Int64, scenario::Vector{Int64})
 
     t = size(scenario_model[:v],1)+1
     J = size(scenario_model[:s],1)
@@ -90,7 +90,7 @@ function update_scenario_based_box!(scenario_model, K, scenario)
     nothing #return scenario_model
 end
 
-function solve_scenario_based_box(scenario_model, time_start)
+function solve_scenario_based_box(scenario_model::Model, time_start::DateTime)
     set_remaining_time(scenario_model, time_start)
     optimize!(scenario_model)
     theta = value(scenario_model[:obj])
@@ -101,7 +101,7 @@ function solve_scenario_based_box(scenario_model, time_start)
     return theta, x, y, s, xi
 end
 ######################################################################################################################################
-function build_separation_problem_box(inst, K, ξ_value)
+function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_value::Array{Int64,2})
 
     loc_J = inst.loc_J
     J = size(loc_J, 2)
@@ -132,12 +132,12 @@ function build_separation_problem_box(inst, K, ξ_value)
     return us
 end
 
-function update_separation_problem_box!(sepmodel, ξ_val)
+function update_separation_problem_box!(sepmodel::Model, ξ_val::Array{Int64,2})
     fix.(sepmodel[:xi], ξ_val; force = true)
     nothing #return sepmodel
 end
 
-function solve_separation_problem_box(sepmodel, time_start)    
+function solve_separation_problem_box(sepmodel::Model, time_start::DateTime)    
     set_remaining_time(sepmodel, time_start)
     optimize!(sepmodel)
     return round.(value.(sepmodel[:zeta]), digits = 4), round.(value.(sepmodel[:d]), digits = 2)

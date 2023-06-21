@@ -122,7 +122,7 @@ end
 Solve the separation problem for cell p and demand node dn. Returns worst-case d[dn] and d.
 """
 function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int64}, scenario_tree)
-    J = size(loc_J,1)
+    J = size(loc_J,2)
     leaf_scenarios = filter(is_leaf, scenario_tree)
     # Define the separation model
     sm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter); add_bridges = false)

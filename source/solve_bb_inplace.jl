@@ -134,8 +134,8 @@ function build_separation_problem(K, inst)
     
     loc_I = inst.loc_I
     loc_J = inst.loc_J
-    I = size(loc_I, 1)
-    J = size(loc_J, 1)
+    I = size(loc_I, 2)
+    J = size(loc_J, 2)
     D = inst.D
     pc = inst.pc
     
@@ -153,7 +153,7 @@ function build_separation_problem(K, inst)
 
     # d must be in the uncertainty set
     @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
-    for (j1,j2) in Iterators.product(1:J,1:J)   # clustering of demand
+    for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
 

@@ -42,17 +42,16 @@ Build the scenario-based K_adaptable problem.
 function build_scenario_based_box(inst, K)
     loc_I = inst.loc_I
     loc_J = inst.loc_J
-    I = size(loc_I, 1)
-    J = size(loc_J, 1)
+    I = size(loc_I, 2)
+    J = size(loc_J, 2)
     D = inst.D
-    pc = inst.pc
     W = inst.W
     
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
-    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
+    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
     @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
@@ -105,7 +104,7 @@ end
 function build_separation_problem_box(inst, K, ξ_value)
 
     loc_J = inst.loc_J
-    J = size(loc_J, 1)
+    J = size(loc_J, 2)
     D = inst.D
     pc = inst.pc
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
@@ -121,7 +120,7 @@ function build_separation_problem_box(inst, K, ξ_value)
     # d must be in the uncertainty set
     @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
     for (j1,j2) in Iterators.product(1:J,1:J)   # clustering of demand
-        @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
+        @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
 
     @expression(us, M, 2*D+1)

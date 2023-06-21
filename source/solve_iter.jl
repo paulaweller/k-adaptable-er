@@ -29,8 +29,8 @@ tree given the new scenarios obtained.
 function solve_partitioned_problem(inst::AllocationInstance,
                                    scenario_tree::Vector{TreeScenario})
 
-    I = size(inst.loc_I, 1)
-    J = size(inst.loc_J, 1)
+    I = size(inst.loc_I, 2)
+    J = size(inst.loc_J, 2)
 
     # scenario_tree is a vector containing every scenario in the tree
     # We will have one cell for every leaf scenario in the tree
@@ -42,7 +42,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     set_silent(rm)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
-    @expression(rm, c[i=1:I,j=1:J], norm(inst.loc_I[i,:]-inst.loc_J[j,:])); # transportation costs
+    @expression(rm, c[i=1:I,j=1:J], norm(inst.loc_I[:,i]-inst.loc_J[:,j])); # transportation costs
     @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
 
     # Decision variables:
@@ -136,8 +136,8 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int
     # for each pair of demand points, add constraint that if locations are close, demand values must be close, too
     for j1 in 1:J
         for j2 in j1+1:J
-            @constraint(sm, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
-            @constraint(sm, d[j2]-d[j1] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
+            @constraint(sm, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
+            @constraint(sm, d[j2]-d[j1] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
         end
     end
 
@@ -171,8 +171,6 @@ end
 Solve the problem for the parameters with it iterations.
 """
 function k_adapt_solution(it::Int64, inst::AllocationInstance)
-    I = size(inst.loc_I, 1)
-    J = size(inst.loc_J, 1)
     # Start with no partitions (i.e., one scenario)
     scenario_tree = [ TreeScenario(zeros(4),nothing,[]) ]
     # store these values for every iteration:

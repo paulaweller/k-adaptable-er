@@ -73,8 +73,8 @@ function solve_scenario_based(tau, inst, time_start)
 
     loc_I = inst.loc_I
     loc_J = inst.loc_J
-    I = size(loc_I, 1)
-    J = size(loc_J, 1)
+    I = size(loc_I, 2)
+    J = size(loc_J, 2)
     K = length(tau)
     W = inst.W
     D = inst.D
@@ -83,7 +83,7 @@ function solve_scenario_based(tau, inst, time_start)
     set_optimizer_attribute(rm, "OutputFlag", 0)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
-    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[i,:]-loc_J[j,:])); # transportation costs
+    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
     @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
@@ -125,8 +125,8 @@ function solve_separation_problem_general(y, s, inst, time_start)
     
     loc_I = inst.loc_I
     loc_J = inst.loc_J
-    I = size(loc_I, 1)
-    J = size(loc_J, 1)
+    I = size(loc_I, 2)
+    J = size(loc_J, 2)
     K = size(y, 3)
     D = inst.D
     pc = inst.pc
@@ -142,7 +142,7 @@ function solve_separation_problem_general(y, s, inst, time_start)
     # d must be in the uncertainty set
     @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
     for (j1,j2) in Iterators.product(1:J,1:J)   # clustering of demand
-        @constraint(us, d[j1]-d[j2] <= norm(loc_J[j1,:]-loc_J[j2,:],Inf))
+        @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
 
     @expression(us, M, 2*D+1)

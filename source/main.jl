@@ -15,8 +15,7 @@ include("solve_bb_inplace.jl")
 # seed 9,7 is great
 #61 weird
 @show inst_gen = generate_instance(1,3,850)
-#inst_gen = AllocationInstance([2 4; 8 3; 9 7], [1 9; 3 2; 4 1; 6 3; 7 9; 9 10], 15, 5, 0.5)
-#inst_gen = AllocationInstance([5 5], [5 2; 10 5], 5, 5, 0.5)
+#inst_gen = AllocationInstance([5; 5], [5 10; 2 5], 5, 5, 0.5)
 
 #----------------------------
 

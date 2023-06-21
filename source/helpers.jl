@@ -40,27 +40,27 @@ function generate_instance(I_inst, J_inst, seed; demand_bound=5, cont_perc=0.5, 
     while length(loc_set) !== I_inst+J_inst  
         
         # randomly generate locations of service points as x,y-coordinates
-        loc_I_inst = rand(1:loc_max,I_inst,2)
+        loc_I_inst = rand(1:loc_max,2,I_inst)
         # randomly generate locations of demand points as coordinates
-        loc_J_inst = rand(1:loc_max,J_inst,2)
+        loc_J_inst = rand(1:loc_max,2,J_inst)
         # add to set (not list) of locations, i.e. a location won't be listed twice
-        loc_set = union(union(loc_I_inst[i,:] for i in 1:I_inst),union(loc_J_inst[j,:] for j in 1:J_inst))
+        loc_set = union(union(loc_I_inst[:,i] for i in 1:I_inst),union(loc_J_inst[:,j] for j in 1:J_inst))
     end
 
     # sort locations by x-coordinate for simplicity
-    loc_I_inst = sort(loc_I_inst, dims=1)
-    loc_J_inst = sort(loc_J_inst, dims=1)
+    loc_I_inst = sort(loc_I_inst, dims=2)
+    loc_J_inst = sort(loc_J_inst, dims=2)
 
     instance = AllocationInstance(loc_I_inst,loc_J_inst,agg_supply_bound,demand_bound,cont_perc)
     # plot service and demand points
     if plot_loc == true
 
-        scatter(loc_I_inst[:,1],loc_I_inst[:,2],
+        scatter(loc_I_inst[1,:],loc_I_inst[2,:],
                     lims=[0,loc_max+1.2],
                     series_annotations = text.(1:J_inst, :inside),
                     markersize = 20,
                     lab="service point")
-        display(scatter!(loc_J_inst[:,1],loc_J_inst[:,2], 
+        display(scatter!(loc_J_inst[1,:],loc_J_inst[2,:], 
                             series_annotations = text.(1:J_inst, :inside),
                             shape = :square,
                             markersize = 15,
@@ -277,7 +277,7 @@ function k_curve_multi(mult; n_val=3, m_val=6, d_max=5, p=0.5, number_of_plans=f
         close(io)
 
         #calculate costs
-        c_gen = reshape([norm(loc_I_gen[i,:]-loc_J_gen[j,:]) for j in 1:no_dp for i in 1:no_sp],no_sp,no_dp)
+        c_gen = reshape([norm(loc_I_gen[:,i]-loc_J_gen[:,j]) for j in 1:no_dp for i in 1:no_sp],no_sp,no_dp)
 
         # calculate k-adaptable solution
         o_v, w_v, q_v, p_v, p_true_v = k_adapt_solution(10, loc_I_gen, loc_J_gen, agg_supply_bound, demand_bound, cont_perc)

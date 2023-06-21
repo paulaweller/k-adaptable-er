@@ -134,8 +134,8 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int
     @constraint(sm, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))
 
     # for each pair of demand points, add constraint that if locations are close, demand values must be close, too
-    for j1 in 1:J
-        for j2 in j1+1:J
+    for j2 in 1:J
+        for j1 in j1+1:J
             @constraint(sm, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
             @constraint(sm, d[j2]-d[j1] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
         end

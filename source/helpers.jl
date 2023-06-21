@@ -85,11 +85,11 @@ function branch_partition!(N, tau, xi, knew)
         tau_temp = copy(tau)
         # ...with the new scenario added to uncset number k
         tau_temp[k] = union(tau_temp[k], [xi])
-        #push!(tau_temp[k], xi)
-        N = union(N, [tau_temp])
-        #push!(N, copy(tau_temp))   
+        #unique!(push!(tau_temp[k], xi))
+        #N = union(N, [tau_temp])
+        push!(N, tau_temp)  
     end
-    return N
+    nothing #return N
 end
 
 function number_of_childnodes(tau)

@@ -20,12 +20,12 @@ function solve_boxes_inplace(K, inst)
     while zeta > 10^(-6) && (runtime <= 240)
         iteration = iteration + 1
 
-        scenario_modell = update_scenario_based_box!(scenario_modell, K, ceil.(Int,d))
+        update_scenario_based_box!(scenario_modell, K, ceil.(Int,d))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start)
 
         # find violations
-        separation_modell = update_separation_problem_box!(separation_modell, xi)
+        update_separation_problem_box!(separation_modell, xi)
         zeta, d = solve_separation_problem_box(separation_modell, time_start)
         runtime = (now()-time_start).value/1000
     end
@@ -87,7 +87,7 @@ function update_scenario_based_box!(scenario_model, K, scenario)
     @constraint(scenario_model, sum(scenario_model[:v][t,k] for k=1:K) >= 1)        # every demand scenario must be covered by at least one plan
     @constraint(scenario_model, [j=1:J,k=1:K], scenario[j]*scenario_model[:v][t,k] <= scenario_model[:ξ][j,k])   # if plan k covers scenario tau[t], it must be componentwise larger
 
-    return scenario_model
+    nothing #return scenario_model
 end
 
 function solve_scenario_based_box(scenario_model, time_start)
@@ -119,7 +119,7 @@ function build_separation_problem_box(inst, K, ξ_value)
 
     # d must be in the uncertainty set
     @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
-    for (j1,j2) in Iterators.product(1:J,1:J)   # clustering of demand
+    for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
 
@@ -134,7 +134,7 @@ end
 
 function update_separation_problem_box!(sepmodel, ξ_val)
     fix.(sepmodel[:xi], ξ_val; force = true)
-    return sepmodel
+    nothing #return sepmodel
 end
 
 function solve_separation_problem_box(sepmodel, time_start)    

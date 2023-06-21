@@ -26,15 +26,16 @@ function solve_bb_inplace(K, inst)
     while (isempty(N) == false) && (runtime <= 240) # stop after 240 s
         it = it + 1
         # select unexplored node (TODO: which one to select?) and delete from set of unexplored nodes
+        unique!(N)
         tau = popfirst!(N)
         # update model
-        scenario_based_model = update_scenario_based!(scenario_based_model, tau)
+        update_scenario_based!(scenario_based_model, tau)
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s = solve_scenario_based_inplace(scenario_based_model, time_start)
 
         if theta < theta_i
             # update separation problem
-            separation_model = update_separation_problem!(separation_model, y, s)
+            update_separation_problem!(separation_model, y, s)
             #(ζ, \xi, z)$ = Solve Separation Problem (8): max $ζ$ where $ζ$ is the amount of violation of the uncertain constraints and $\xi$ is the scenario that leads to violation
             zeta, xi = solve_separation_problem_inplace(separation_model, time_start)
             #println("separation problem solved, worst case scenario xi = $(xi)")
@@ -47,7 +48,7 @@ function solve_bb_inplace(K, inst)
                 s_i = s
             else
                 Knew = number_of_childnodes(tau)
-                N = branch_partition!(N, tau, xi, Knew)
+                branch_partition!(N, tau, xi, Knew)
             end
 
         end
@@ -115,7 +116,7 @@ function update_scenario_based!(model, tau)
     I = size(model[:w],1)
     # add new demand constraints
     @constraint(model, demand_con[k=1:K, xi=tau[k], j=1:J], sum(model[:q][i,j,k] for i in 1:I)+model[:s][j,k] >= xi[j])
-    return model
+    nothing #return model
 end
 
 function solve_scenario_based_inplace(model, time)
@@ -171,7 +172,7 @@ function update_separation_problem!(sep_model, y_value,s_value)
     # fix variables y,s to current solution
     fix.(sep_model[:y], y_value; force = true)
     fix.(sep_model[:s], s_value; force = true)
-    return sep_model
+    nothing #return sep_model
 end
 
 function solve_separation_problem_inplace(sep_model, time)

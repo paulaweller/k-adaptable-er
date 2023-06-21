@@ -106,7 +106,7 @@ function solve_separation_problem_boxes(inst, K, ξ, time_start)
 
     # d must be in the uncertainty set
     @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
-    for (j1,j2) in Iterators.product(1:J,1:J)   # clustering of demand
+    for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
 

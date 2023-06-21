@@ -24,7 +24,7 @@ function solve_bb_general(K, inst)
         #println("number of unexplored nodes: $(length(N))")
         # select unexplored node (TODO: which one to select?)
         # and delete from set of unexplored nodes
-        
+        unique!(N)
         tau = popfirst!(N)
 
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
@@ -46,7 +46,7 @@ function solve_bb_general(K, inst)
 
             else
                 Knew = number_of_childnodes(tau)
-                N = branch_partition!(N, tau, xi, Knew)
+                branch_partition!(N, tau, xi, Knew)
             end
 
         end
@@ -141,7 +141,7 @@ function solve_separation_problem_general(y, s, inst, time_start)
 
     # d must be in the uncertainty set
     @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
-    for (j1,j2) in Iterators.product(1:J,1:J)   # clustering of demand
+    for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
 

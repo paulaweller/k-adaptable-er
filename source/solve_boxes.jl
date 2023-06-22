@@ -83,8 +83,8 @@ function solve_scenario_based_boxes(tau::Vector{Vector{Int64}}, inst::Allocation
     theta = value(obj)
     x = round.(Int,value.(w))
     y = round.(Int,value.(q))
-    s::Array{Int64,2} = round.(Int,value.(s))
-    xi = value.(ξ)
+    s = round.(Int,value.(s))
+    xi = round.(Int,value.(ξ))
     return theta, x, y, s, xi
 end
 

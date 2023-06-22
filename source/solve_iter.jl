@@ -43,7 +43,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
     @expression(rm, c[i=1:I,j=1:J], norm(inst.loc_I[:,i]-inst.loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 10.0*norm(c,Inf))                  # coefficient for slack variables in objective
 
     # Decision variables:
     # First stage, here-and-now decision where to store supplies
@@ -72,7 +72,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
 
     # demand satisfaction as lazy callback
     # extract worst-case scenarios
-    worst_case_scenarios = []
+    worst_case_scenarios = Vector{Float64}[]
     function my_callback_function(cb_data)
         y_val = callback_value.(cb_data, q)
         s_val = callback_value.(cb_data, s)
@@ -135,7 +135,7 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int
 
     # for each pair of demand points, add constraint that if locations are close, demand values must be close, too
     for j2 in 1:J
-        for j1 in j1+1:J
+        for j1 in j2+1:J
             @constraint(sm, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
             @constraint(sm, d[j2]-d[j1] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
         end

@@ -9,15 +9,17 @@ Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam 
 function solve_bb_general(K::Int64, inst::AllocationInstance)
     time_start = now()
     runtime = 0.0
+    I = size(inst.loc_I, 2)
+    J = size(inst.loc_J, 2)
     # set of unexplored nodes, each node consists of K (disjoint) subsets of the uncertainty set
     # we start with K empty sets
     N = Vector{Vector{Vector{Int64}}}[]
-    push!(N, Iterators.repeated(Vector{Int64}[],K)...)
+    push!(N, [Iterators.repeated(Vector{Int64}[],K)...])
     # the incumbent
     theta_i = 1e10     # objective value
     x_i = Int64[]            # first-stage solution
-    y_i::Array{Int64,3}            # second-stage solution
-    s_i::Array{Int64,2}            # second-stage slack variables
+    y_i = zeros(Int64,I,J,K)            # second-stage solution
+    s_i = zeros(Int64, J,K)           # second-stage slack variables
     it = 0              # iteration count
     
     while (isempty(N) == false) && (runtime <= 240.0) # stop after 240 s
@@ -116,9 +118,9 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Int64}}}, inst::Allocati
     # solve
     optimize!(rm)
     theta::Float64 = objective_value(rm)
-    x::Array{Int64,1} = round.(Int, value.(w))
-    y::Array{Int64,3} = round.(Int, value.(q))
-    s::Array{Int64, 2} = round.(Int, value.(s))
+    x = round.(Int, value.(w))
+    y = round.(Int, value.(q))
+    s = round.(Int, value.(s))
     return theta, x, y, s
 end
 

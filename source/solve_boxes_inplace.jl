@@ -97,7 +97,7 @@ function solve_scenario_based_box(scenario_model::Model, time_start::DateTime)
     x::Array{Int64,1} = round.(Int,value.(scenario_model[:w]))
     y::Array{Int64,3} = round.(Int,value.(scenario_model[:q]))
     s::Array{Int64,2} = round.(Int,value.(scenario_model[:s]))
-    xi::Array{Float64,2} = value.(scenario_model[:ξ])
+    xi::Array{Int64,2} = round.(Int,value.(scenario_model[:ξ]))
     return theta, x, y, s, xi
 end
 ######################################################################################################################################

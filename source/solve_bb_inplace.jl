@@ -9,15 +9,17 @@ Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam 
 function solve_bb_inplace(K::Int64, inst::AllocationInstance)
     time_start = now()  # measure start of runtime
     runtime = 0.0         # initiate variable for runtime
+    I = size(inst.loc_I, 2)
+    J = size(inst.loc_J, 2)
     # set of unexplored nodes, each node consists of K (disjoint) subsets of the uncertainty set
     # we start with K empty sets
     N = Vector{Vector{Vector{Int64}}}[]
-    push!(N, Iterators.repeated(Vector{Int64}[],K)...)    # N[a,b,c] = N[partition,subset,demandpoint]
+    push!(N, [Iterators.repeated(Vector{Int64}[],K)...])    # N[a,b,c] = N[partition,subset,demandpoint]
     # the incumbent
     theta_i = 1e10     # objective value
     x_i = Int64[]            # first-stage solution
-    y_i::Array{Int64,3}            # second-stage solution
-    s_i::Array{Int64,2}            # second-stage slack variables
+    y_i = zeros(Int64,I,J,K)            # second-stage solution
+    s_i = zeros(Int64,J,K)           # second-stage slack variables
     it = 0              # iteration count
     
     scenario_based_model = build_scenario_based(inst, K)
@@ -123,7 +125,7 @@ function solve_scenario_based_inplace(model::Model, time::DateTime)
     set_remaining_time(model, time)
     # solve model
     optimize!(model)
-    theta:::Float64 = objective_value(model)
+    theta::Float64 = objective_value(model)
     x = round.(Int, value.(model[:w]))
     y = round.(Int, value.(model[:q]))
     s = round.(Int,value.(model[:s]))

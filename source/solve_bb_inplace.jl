@@ -11,12 +11,13 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance)
     runtime = 0.0         # initiate variable for runtime
     # set of unexplored nodes, each node consists of K (disjoint) subsets of the uncertainty set
     # we start with K empty sets
-    N = [[Iterators.repeated(Vector{Int64}[],K)...]]    # N[a,b,c] = N[partition,subset,demandpoint]
+    N = Vector{Vector{Vector{Int64}}}[]
+    push!(N, Iterators.repeated(Vector{Int64}[],K)...)    # N[a,b,c] = N[partition,subset,demandpoint]
     # the incumbent
     theta_i = 1e10     # objective value
     x_i = Int64[]            # first-stage solution
-    y_i = Array{Int64,3}            # second-stage solution
-    s_i = Array{Int64,2}            # second-stage slack variables
+    y_i::Array{Int64,3}            # second-stage solution
+    s_i::Array{Int64,2}            # second-stage slack variables
     it = 0              # iteration count
     
     scenario_based_model = build_scenario_based(inst, K)
@@ -80,7 +81,7 @@ function build_scenario_based(inst::AllocationInstance, K::Int64)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 10*max(c...))    # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 10.0*norm(c, Inf))    # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -122,10 +123,10 @@ function solve_scenario_based_inplace(model::Model, time::DateTime)
     set_remaining_time(model, time)
     # solve model
     optimize!(model)
-    theta = objective_value(model)
+    theta:::Float64 = objective_value(model)
     x = round.(Int, value.(model[:w]))
     y = round.(Int, value.(model[:q]))
-    s = value.(model[:s])
+    s = round.(Int,value.(model[:s]))
     return theta, x, y, s
 end
 

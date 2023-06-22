@@ -52,7 +52,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 10.0*norm(c,Inf))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -93,11 +93,11 @@ end
 function solve_scenario_based_box(scenario_model::Model, time_start::DateTime)
     set_remaining_time(scenario_model, time_start)
     optimize!(scenario_model)
-    theta = value(scenario_model[:obj])
-    x = round.(Int,value.(scenario_model[:w]))
-    y = round.(Int,value.(scenario_model[:q]))
-    s = round.(Int,value.(scenario_model[:s]))
-    xi = value.(scenario_model[:ξ])
+    theta::Float64 = value(scenario_model[:obj])
+    x::Array{Int64,1} = round.(Int,value.(scenario_model[:w]))
+    y::Array{Int64,3} = round.(Int,value.(scenario_model[:q]))
+    s::Array{Int64,2} = round.(Int,value.(scenario_model[:s]))
+    xi::Array{Float64,2} = value.(scenario_model[:ξ])
     return theta, x, y, s, xi
 end
 ######################################################################################################################################
@@ -140,5 +140,5 @@ end
 function solve_separation_problem_box(sepmodel::Model, time_start::DateTime)    
     set_remaining_time(sepmodel, time_start)
     optimize!(sepmodel)
-    return round.(value.(sepmodel[:zeta]), digits = 4), round.(value.(sepmodel[:d]), digits = 2)
+    return round.(value.(sepmodel[:zeta]), digits = 4), ceil.(Int, value.(sepmodel[:d]))
 end

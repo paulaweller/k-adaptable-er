@@ -1,4 +1,4 @@
-using LinearAlgebra, Dates, Random, Statistics
+using LinearAlgebra, Dates, Random, Statistics, JuMP
 #StatsPlots,
 struct AllocationInstance
     loc_I::Array{Int64,2}
@@ -96,10 +96,9 @@ function number_of_childnodes(tau::Vector{Vector{Vector{Int64}}})
     # sort the partition by size of the subsets
     sort!(tau, by= x-> size(x), rev = true)
     #define Knew the first empty subset
+    Knew = length(tau)
     if isempty(tau[end]) 
         Knew = findfirst(x-> isempty(x), tau)
-    else
-        Knew = length(tau)
     end
     return Knew
 end

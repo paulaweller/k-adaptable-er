@@ -6,20 +6,21 @@ const GRB_ENV_bb = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_bb_general(K, inst)
+function solve_bb_general(K::Int64, inst::AllocationInstance)
     time_start = now()
-    runtime = 0
+    runtime = 0.0
     # set of unexplored nodes, each node consists of K (disjoint) subsets of the uncertainty set
     # we start with K empty sets
-    N = [[Iterators.repeated([],K)...]]
+    N = Vector{Vector{Vector{Int64}}}[]
+    push!(N, Iterators.repeated(Vector{Int64}[],K)...)
     # the incumbent
-    theta_i = 10^10     # objective value
-    x_i = []            # first-stage solution
-    y_i = []            # second-stage solution
-    s_i = []
-    it = 0
+    theta_i = 1e10     # objective value
+    x_i = Int64[]            # first-stage solution
+    y_i::Array{Int64,3}            # second-stage solution
+    s_i::Array{Int64,2}            # second-stage slack variables
+    it = 0              # iteration count
     
-    while (isempty(N) == false) && (runtime <= 240) # stop after 240 s
+    while (isempty(N) == false) && (runtime <= 240.0) # stop after 240 s
         it = it + 1
         #println("number of unexplored nodes: $(length(N))")
         # select unexplored node (TODO: which one to select?)
@@ -36,7 +37,7 @@ function solve_bb_general(K, inst)
             zeta, xi = solve_separation_problem_general(y, s, inst, time_start)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
-            if zeta <= 10^(-6) # no violations
+            if zeta <= 1e-6 # no violations
 
                 #$(θ^i, x^i, y^i) ← (θ, x, y)$
                 theta_i = theta
@@ -53,7 +54,7 @@ function solve_bb_general(K, inst)
         runtime = (now()-time_start).value/1000
     end
     
-    if theta_i == 10^10
+    if theta_i == 1e10
 
         return "infeasible"
 
@@ -69,7 +70,7 @@ end
 
 Solve the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function solve_scenario_based(tau, inst, time_start)
+function solve_scenario_based(tau::Vector{Vector{Vector{Int64}}}, inst::AllocationInstance, time_start::DateTime)
 
     loc_I = inst.loc_I
     loc_J = inst.loc_J
@@ -84,7 +85,7 @@ function solve_scenario_based(tau, inst, time_start)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 10.0*norm(c,Inf))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -114,14 +115,14 @@ function solve_scenario_based(tau, inst, time_start)
     set_remaining_time(rm, time_start)
     # solve
     optimize!(rm)
-    theta = objective_value(rm)
-    x = round.(Int, value.(w))
-    y = round.(Int, value.(q))
-    s = value.(s)
+    theta::Float64 = objective_value(rm)
+    x::Array{Int64,1} = round.(Int, value.(w))
+    y::Array{Int64,3} = round.(Int, value.(q))
+    s::Array{Int64, 2} = round.(Int, value.(s))
     return theta, x, y, s
 end
 
-function solve_separation_problem_general(y, s, inst, time_start)
+function solve_separation_problem_general(y::Array{Int64,3}, s::Array{Int64,2}, inst::AllocationInstance, time_start::DateTime)
     
     loc_I = inst.loc_I
     loc_J = inst.loc_J

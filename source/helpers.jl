@@ -1,10 +1,10 @@
 using LinearAlgebra, Dates, Random, Statistics, JuMP
 #StatsPlots,
 struct AllocationInstance
-    loc_I::Array{Int64,2}
-    loc_J::Array{Int64,2}
-    W::Int64
-    D::Int64
+    loc_I::Array{Float64,2}
+    loc_J::Array{Float64,2}
+    W::Float64
+    D::Float64
     pc::Float64
 end
 #const GRB_ENV = Gurobi.Env()
@@ -30,11 +30,11 @@ function generate_instance(I_inst, J_inst, seed; demand_bound=5, cont_perc=0.5, 
     Random.seed!(seed)
     
     # set of locations for service and demand points
-    loc_set = []
+    loc_set = Vector{Float64}[]
     # locations of service points
-    loc_I_inst = []
+    loc_I_inst = Vector{Float64}[]
     # locations of demand points
-    loc_J_inst = []
+    loc_J_inst = Vector{Float64}[]
 
     # no two points can have the same location
     while length(loc_set) !== I_inst+J_inst  
@@ -79,20 +79,20 @@ function set_remaining_time(model::Model, time_start::DateTime)
     set_time_limit_sec(model, max(time_remaining,0))
 end
 
-function branch_partition!(N::Vector{Vector{Vector{Vector{Int64}}}}, tau::Vector{Vector{Vector{Int64}}}, xi::Array{Int64,1}, knew::Int64)
+function branch_partition!(N::Vector{Vector{Vector{Vector{Float64}}}}, tau::Vector{Vector{Vector{Float64}}}, xi::Array{Float64,1}, knew::Int64)
     for k in 1:knew
         # each child node is the current uncset configuration...
         tau_temp = copy(tau)
         # ...with the new scenario added to uncset number k
-        tau_temp[k] = union(tau_temp[k], [xi])
-        #unique!(push!(tau_temp[k], xi))
+        # tau_temp[k] = union(tau_temp[k], [xi])
+        unique!(push!(tau_temp[k], xi))
         #N = union(N, [tau_temp])
         push!(N, tau_temp)  
     end
     nothing #return N
 end
 
-function number_of_childnodes(tau::Vector{Vector{Vector{Int64}}})
+function number_of_childnodes(tau::Vector{Vector{Vector{Float64}}})
     # sort the partition by size of the subsets
     sort!(tau, by= x-> size(x), rev = true)
     #define Knew the first empty subset

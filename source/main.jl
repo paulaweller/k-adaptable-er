@@ -22,12 +22,13 @@ k = 3
 it = round(Int, 1 + (k-1)/(dn-1))
 
 #----------------------------
+# @code_warntype k_adapt_solution(it, inst_gen)
 
-# @show theta_iter, x_iter, y_iter, p_iter, p_true_iter = k_adapt_solution(it, inst_gen)
+@show theta_iter, x_iter, y_iter, p_iter, p_true_iter = k_adapt_solution(it, inst_gen)
 
-# @show x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_boxes(k, inst_gen)
+@show x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_boxes(k, inst_gen)
 
-# @show x_box2, y_box2, s_box2, xi_box2, theta_box2, it_box2, runtime_box2 = solve_boxes_inplace(k, inst_gen)
+@show x_box2, y_box2, s_box2, xi_box2, theta_box2, it_box2, runtime_box2 = solve_boxes_inplace(k, inst_gen)
 
 @show x_general, y_general, s_general, theta_general, it_general, runtime_general = solve_bb_general(k, inst_gen)
 

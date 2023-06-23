@@ -13,13 +13,13 @@ function solve_bb_general(K::Int64, inst::AllocationInstance)
     J = size(inst.loc_J, 2)
     # set of unexplored nodes, each node consists of K (disjoint) subsets of the uncertainty set
     # we start with K empty sets
-    N = Vector{Vector{Vector{Int64}}}[]
-    push!(N, [Iterators.repeated(Vector{Int64}[],K)...])
+    N = Vector{Vector{Vector{Float64}}}[]
+    push!(N, Vector{Vector{Float64}}[Iterators.repeated(Vector{Float64}[],K)...])
     # the incumbent
     theta_i = 1e10     # objective value
-    x_i = Int64[]            # first-stage solution
-    y_i = zeros(Int64,I,J,K)            # second-stage solution
-    s_i = zeros(Int64, J,K)           # second-stage slack variables
+    x_i = Float64[]            # first-stage solution
+    y_i = zeros(Float64,I,J,K)            # second-stage solution
+    s_i = zeros(Float64, J,K)           # second-stage slack variables
     it = 0              # iteration count
     
     while (isempty(N) == false) && (runtime <= 240.0) # stop after 240 s
@@ -72,7 +72,7 @@ end
 
 Solve the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function solve_scenario_based(tau::Vector{Vector{Vector{Int64}}}, inst::AllocationInstance, time_start::DateTime)
+function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::AllocationInstance, time_start::DateTime)
 
     loc_I = inst.loc_I
     loc_J = inst.loc_J
@@ -97,8 +97,8 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Int64}}}, inst::Allocati
     @constraint(rm, sum(w[i] for i in 1:I) <= W)                    # supply limit
     @constraint(rm, [i=1:I,k=1:K], sum(q[i,j,k] for j in 1:J) <= w[i])    # service point limit
         
-    @variable(rm, 0 <= obj <= 10^10)                        # The objective function will be the maximum of the objective function across all the cells
-    @variable(rm, 0<= z[1:K]<=10^10)                        # A variable to track each cells objective value
+    @variable(rm, 0 <= obj <= 1e10)                        # The objective function will be the maximum of the objective function across all the cells
+    @variable(rm, 0<= z[1:K]<=1e10)                        # A variable to track each cells objective value
     @objective(rm, Min, obj)
 
     for k in 1:K
@@ -118,13 +118,14 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Int64}}}, inst::Allocati
     # solve
     optimize!(rm)
     theta::Float64 = objective_value(rm)
-    x = round.(Int, value.(w))
-    y = round.(Int, value.(q))
-    s = round.(Int, value.(s))
-    return theta, x, y, s
+    x = value.(w)
+    y = value.(q)
+    s_val = value.(s)
+
+    return theta, x, y, s_val
 end
 
-function solve_separation_problem_general(y::Array{Int64,3}, s::Array{Int64,2}, inst::AllocationInstance, time_start::DateTime)
+function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,2}, inst::AllocationInstance, time_start::DateTime)
     
     loc_I = inst.loc_I
     loc_J = inst.loc_J
@@ -158,5 +159,5 @@ function solve_separation_problem_general(y::Array{Int64,3}, s::Array{Int64,2}, 
     set_remaining_time(us, time_start)
     optimize!(us)
 
-    return round.(value.(zeta), digits = 4), ceil.(Int, value.(d))#round.(value.(d), digits = 2)
+    return value.(zeta), value.(d)#round.(value.(d), digits = 2)
 end

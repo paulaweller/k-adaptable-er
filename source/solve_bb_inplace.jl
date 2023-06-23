@@ -13,13 +13,13 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance)
     J = size(inst.loc_J, 2)
     # set of unexplored nodes, each node consists of K (disjoint) subsets of the uncertainty set
     # we start with K empty sets
-    N = Vector{Vector{Vector{Int64}}}[]
-    push!(N, [Iterators.repeated(Vector{Int64}[],K)...])    # N[a,b,c] = N[partition,subset,demandpoint]
+    N = Vector{Vector{Vector{Float64}}}[]
+    push!(N, Vector{Vector{Float64}}[Iterators.repeated(Vector{Int64}[],K)...])    # N[a,b,c] = N[partition,subset,demandpoint]
     # the incumbent
     theta_i = 1e10     # objective value
-    x_i = Int64[]            # first-stage solution
-    y_i = zeros(Int64,I,J,K)            # second-stage solution
-    s_i = zeros(Int64,J,K)           # second-stage slack variables
+    x_i = Float64[]            # first-stage solution
+    y_i = zeros(Float64,I,J,K)            # second-stage solution
+    s_i = zeros(Float64,J,K)           # second-stage slack variables
     it = 0              # iteration count
     
     scenario_based_model = build_scenario_based(inst, K)
@@ -105,7 +105,7 @@ function build_scenario_based(inst::AllocationInstance, K::Int64)
     return rm
 end
 
-function update_scenario_based!(model::Model, tau::Vector{Vector{Vector{Int64}}}) 
+function update_scenario_based!(model::Model, tau::Vector{Vector{Vector{Float64}}}) 
     # Can't have constraints in place and just change rhs, 
     # because the number of constraints changes with tau and could be bigger or smaller than before.
     
@@ -126,10 +126,10 @@ function solve_scenario_based_inplace(model::Model, time::DateTime)
     # solve model
     optimize!(model)
     theta::Float64 = objective_value(model)
-    x = round.(Int, value.(model[:w]))
-    y = round.(Int, value.(model[:q]))
-    s = round.(Int,value.(model[:s]))
-    return theta, x, y, s
+    x = value.(model[:w])
+    y = value.(model[:q])
+    s_val = value.(model[:s])
+    return theta, x, y, s_val
 end
 
 
@@ -170,7 +170,7 @@ function build_separation_problem(K::Int64, inst::AllocationInstance)
     return us
 end
 
-function update_separation_problem!(sep_model::Model, y_value::Array{Int64, 3},s_value::Array{Int64,2})
+function update_separation_problem!(sep_model::Model, y_value::Array{Float64, 3},s_value::Array{Float64,2})
     # fix variables y,s to current solution
     fix.(sep_model[:y], y_value; force = true)
     fix.(sep_model[:s], s_value; force = true)
@@ -181,5 +181,5 @@ function solve_separation_problem_inplace(sep_model::Model, time::DateTime)
     set_remaining_time(sep_model, time)
     # optimize model
     optimize!(sep_model)
-    return round.(value.(sep_model[:zeta]), digits = 4), ceil.(Int, value.(sep_model[:d]))#round.(value.(sep_model[:d]), digits = 2)
+    return value.(sep_model[:zeta]), value.(sep_model[:d])#round.(value.(sep_model[:d]), digits = 2)
 end

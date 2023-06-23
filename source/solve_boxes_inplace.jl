@@ -20,7 +20,7 @@ function solve_boxes_inplace(K::Int64, inst::AllocationInstance)
     while zeta > 1e-6 && (runtime <= 240.0)
         iteration = iteration + 1
 
-        update_scenario_based_box!(scenario_modell, K, ceil.(Int,d))
+        update_scenario_based_box!(scenario_modell, K, d)
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start)
 
@@ -77,7 +77,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     return rm
 end
 
-function update_scenario_based_box!(scenario_model::Model, K::Int64, scenario::Vector{Int64})
+function update_scenario_based_box!(scenario_model::Model, K::Int64, scenario::Vector{Float64})
 
     t = size(scenario_model[:v],1)+1
     J = size(scenario_model[:s],1)
@@ -94,14 +94,14 @@ function solve_scenario_based_box(scenario_model::Model, time_start::DateTime)
     set_remaining_time(scenario_model, time_start)
     optimize!(scenario_model)
     theta::Float64 = value(scenario_model[:obj])
-    x::Array{Int64,1} = round.(Int,value.(scenario_model[:w]))
-    y::Array{Int64,3} = round.(Int,value.(scenario_model[:q]))
-    s::Array{Int64,2} = round.(Int,value.(scenario_model[:s]))
-    xi::Array{Int64,2} = round.(Int,value.(scenario_model[:ξ]))
-    return theta, x, y, s, xi
+    x::Vector{Float64} = value.(scenario_model[:w])
+    y::Array{Float64,3} = value.(scenario_model[:q])
+    s_val::Array{Float64,2} = value.(scenario_model[:s])
+    xi::Array{Float64,2} = value.(scenario_model[:ξ])
+    return theta, x, y, s_val, xi
 end
 ######################################################################################################################################
-function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_value::Array{Int64,2})
+function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_value::Array{Float64,2})
 
     loc_J = inst.loc_J
     J = size(loc_J, 2)
@@ -132,7 +132,7 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_val
     return us
 end
 
-function update_separation_problem_box!(sepmodel::Model, ξ_val::Array{Int64,2})
+function update_separation_problem_box!(sepmodel::Model, ξ_val::Array{Float64,2})
     fix.(sepmodel[:xi], ξ_val; force = true)
     nothing #return sepmodel
 end
@@ -140,5 +140,7 @@ end
 function solve_separation_problem_box(sepmodel::Model, time_start::DateTime)    
     set_remaining_time(sepmodel, time_start)
     optimize!(sepmodel)
-    return round.(value.(sepmodel[:zeta]), digits = 4), ceil.(Int, value.(sepmodel[:d]))
+    zeta_val::Float64 = value(sepmodel[:zeta])
+    d_val::Vector{Float64} = value.(sepmodel[:d])
+    return zeta_val, d_val
 end

@@ -94,7 +94,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     # Extend the scenario tree
     for p in 1:P
         # if this cell's objective equals the worst cell's objective...
-        if abs(value(z[p]) - value(obj)) < 10^-6
+        if abs(value(z[p]) - value(obj)) < 1e-6
             for j in 1:J
                 # Extract the active uncertain parameter values
                 demand_scen = worst_case_scenarios[J*(p-1)+j]
@@ -113,7 +113,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     n_plans = length(q_union)
 
     # Return the objective function value and the first-stage solution
-    value(obj), round.(Int,value.(w)), q_original, P, n_plans
+    value(obj), value.(w), value.(q), P, n_plans
 end
 
 
@@ -121,7 +121,7 @@ end
     solve_sep(p, dn, pc, D, loc_J, scenario_tree)
 Solve the separation problem for cell p and demand node dn. Returns worst-case d[dn] and d.
 """
-function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int64}, scenario_tree)
+function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Float64, loc_J::Matrix{Float64}, scenario_tree)
     J = size(loc_J,2)
     leaf_scenarios = filter(is_leaf, scenario_tree)
     # Define the separation model
@@ -167,7 +167,7 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Int64, loc_J::Matrix{Int
 end
 
 """
-    k_adapt_solution(it::Int64, inst)
+    k_adapt_solution(it, inst)
 Solve the problem for the parameters with it iterations.
 """
 function k_adapt_solution(it::Int64, inst::AllocationInstance)
@@ -175,8 +175,8 @@ function k_adapt_solution(it::Int64, inst::AllocationInstance)
     scenario_tree = [ TreeScenario(zeros(4),nothing,[]) ]
     # store these values for every iteration:
     obj_val = Float64[]    # objective value
-    w_val = Vector{Int64}[]    # storage of supplies
-    q_val = Vector{Array{Int64,3}}[]      # transport plans
+    w_val = Vector{Float64}[]    # storage of supplies
+    q_val = Vector{Array{Float64,3}}[]      # transport plans
     p_val = Int64[]      # number pf cells
     p_true = Int64[]     # number of plans
 

@@ -9,7 +9,7 @@ Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam 
 function solve_boxes(K::Int64, inst::AllocationInstance)
     time_start = now()
     runtime = 0.0
-    tau = Vector{Int64}[]            # set of scenarios 
+    tau = Vector{Float64}[]            # set of scenarios 
 
     theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
     zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start)
@@ -18,7 +18,7 @@ function solve_boxes(K::Int64, inst::AllocationInstance)
     
     while zeta > 1e-6 && (runtime <= 240.0)
         iteration = iteration + 1
-        push!(tau, ceil.(Int, d))
+        push!(tau, d)
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
 
@@ -36,7 +36,7 @@ end
 
 Solve the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function solve_scenario_based_boxes(tau::Vector{Vector{Int64}}, inst::AllocationInstance, K::Int64, time_start::DateTime)
+function solve_scenario_based_boxes(tau::Vector{Vector{Float64}}, inst::AllocationInstance, K::Int64, time_start::DateTime)
     loc_I = inst.loc_I
     loc_J = inst.loc_J
     I = size(loc_I, 2)
@@ -81,14 +81,14 @@ function solve_scenario_based_boxes(tau::Vector{Vector{Int64}}, inst::Allocation
     # solve
     optimize!(rm)
     theta = value(obj)
-    x = round.(Int,value.(w))
-    y = round.(Int,value.(q))
-    s = round.(Int,value.(s))
-    xi = round.(Int,value.(ξ))
-    return theta, x, y, s, xi
+    x = value.(w)
+    y = value.(q)
+    s_val = value.(s)
+    xi = value.(ξ)
+    return theta, x, y, s_val, xi
 end
 
-function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::Array{Int64,2}, time_start::DateTime)
+function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::Array{Float64,2}, time_start::DateTime)
 
     loc_J = inst.loc_J
     J = size(loc_J, 2)
@@ -119,5 +119,5 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::
     set_remaining_time(us, time_start)
     optimize!(us)
 
-    return round.(value.(zeta), digits = 4), round.(value.(d), digits = 2)
+    return value.(zeta), value.(d)
 end

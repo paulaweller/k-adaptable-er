@@ -20,7 +20,7 @@ function solve_boxes_inplace(K::Int64, inst::AllocationInstance)
     while zeta > 1e-6 && (runtime <= 240.0)
         iteration = iteration + 1
 
-        update_scenario_based_box!(scenario_modell, K, d)
+        update_scenario_based_box!(scenario_modell, K, round.(d, digits = 4))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start)
 

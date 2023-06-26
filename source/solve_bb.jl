@@ -49,7 +49,7 @@ function solve_bb_general(K::Int64, inst::AllocationInstance)
 
             else
                 Knew = number_of_childnodes(tau)
-                branch_partition!(N, tau, xi, Knew)
+                branch_partition!(N, tau, round.(xi,digits = 4), Knew)
             end
 
         end
@@ -117,6 +117,9 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::Alloca
     set_remaining_time(rm, time_start)
     # solve
     optimize!(rm)
+    if result_count(rm) == 0
+        return 1e10, zeros(Float64, I), zeros(Float64, I, J, K), zeros(Float64, J, K)
+    end
     theta::Float64 = objective_value(rm)
     x = value.(w)
     y = value.(q)

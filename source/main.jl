@@ -24,7 +24,7 @@ it = round(Int, 1 + (k-1)/(dn-1))
 #----------------------------
 # @code_warntype k_adapt_solution(it, inst_gen)
 
-@show theta_iter, x_iter, y_iter, p_iter, p_true_iter = k_adapt_solution(it, inst_gen)
+# @show theta_iter, x_iter, y_iter, p_iter, p_true_iter = k_adapt_solution(it, inst_gen)
 
 @show x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_boxes(k, inst_gen)
 

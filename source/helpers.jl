@@ -84,13 +84,17 @@ function branch_partition!(N::Vector{Vector{Vector{Vector{Float64}}}}, tau::Vect
         # each child node is the current uncset configuration...
         tau_temp = copy(tau)
         # ...with the new scenario added to uncset number k
+        tau_temp_k = copy(tau_temp[k])
         # tau_temp[k] = union(tau_temp[k], [xi])
-        unique!(push!(tau_temp[k], xi))
+        tau_temp[k] = vcat(tau_temp_k, [xi])
+        unique!(tau_temp[k])
         #N = union(N, [tau_temp])
-        push!(N, tau_temp)  
+        push!(N, tau_temp) 
     end
     nothing #return N
 end
+
+
 
 function number_of_childnodes(tau::Vector{Vector{Vector{Float64}}})
     # sort the partition by size of the subsets

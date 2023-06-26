@@ -50,7 +50,7 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance)
                 s_i = s
             else
                 Knew = number_of_childnodes(tau)
-                branch_partition!(N, tau, xi, Knew)
+                branch_partition!(N, tau, round.(xi,digits=4), Knew)
             end
 
         end
@@ -108,7 +108,6 @@ end
 function update_scenario_based!(model::Model, tau::Vector{Vector{Vector{Float64}}}) 
     # Can't have constraints in place and just change rhs, 
     # because the number of constraints changes with tau and could be bigger or smaller than before.
-    
     # delete old demand constraints
     delete.(model, model[:demand_con])
     unregister.(model, :demand_con)
@@ -125,6 +124,9 @@ function solve_scenario_based_inplace(model::Model, time::DateTime)
     set_remaining_time(model, time)
     # solve model
     optimize!(model)
+    if result_count(model) == 0
+        return 1e10, zeros(Float64, I), zeros(Float64, I, J, K), zeros(Float64, J, K)
+    end
     theta::Float64 = objective_value(model)
     x = value.(model[:w])
     y = value.(model[:q])

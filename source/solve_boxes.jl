@@ -18,7 +18,7 @@ function solve_boxes(K::Int64, inst::AllocationInstance)
     
     while zeta > 1e-6 && (runtime <= 240.0)
         iteration = iteration + 1
-        push!(tau, d)
+        push!(tau, round.(d, digits=4))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
 

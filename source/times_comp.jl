@@ -56,13 +56,16 @@ for n in 1:number_of_instances
 
     objectives[n,:] = [theta_general theta_general_ip theta_box theta_box_ip theta_iter[end]]
 
-    iterations[n,:] = [it_general it_general_ip it_box it_box_ip ktrue_iter[end]] # for iter, its the number of subsets not iterations
+    optimum = min(objectives[n,:])
+    opt_vec = fill(optimum, 5)
+
+    gap[n,:] = (objectives[n,:].-opt_vec)./opt_vec
 
     #U = enum_uncset(demand_bound, loc_J_gen, cont_perc)
     #Obs = obs_obj(U, find_plan, q_v, c_gen)
 
     io = open("results/main.txt", "a")
-    write(io, ",\t times: $(times[n,:]) s \t objectives: $(objectives[n,:]) \t iterations: $(iterations[n,:])\n")
+    write(io, ",\t times: $(times[n,:]) s \t objectives: $(objectives[n,:]) \t gaps: $(gap[n,:])\n")
     close(io)
 
 end

@@ -183,5 +183,8 @@ function solve_separation_problem_inplace(sep_model::Model, time::DateTime)
     set_remaining_time(sep_model, time)
     # optimize model
     optimize!(sep_model)
+    if result_count(us) == 0
+        return 1, zeros(Float64, J)
+    end
     return value.(sep_model[:zeta]), value.(sep_model[:d])#round.(value.(sep_model[:d]), digits = 2)
 end

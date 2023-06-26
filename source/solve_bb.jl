@@ -162,5 +162,9 @@ function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,
     set_remaining_time(us, time_start)
     optimize!(us)
 
+    if result_count(us) == 0
+        return 1, zeros(Float64, J)
+    end
+
     return value.(zeta), value.(d)#round.(value.(d), digits = 2)
 end

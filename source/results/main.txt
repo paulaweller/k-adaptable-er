@@ -1,3 +1,0 @@
-Solution times for 2 service points, 5 demand points, k=3
-order: [BB, BB in place, box, box in place, iter]
-seed: 853

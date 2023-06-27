@@ -1,4 +1,4 @@
-using LinearAlgebra, Plots
+using LinearAlgebra, Plots, StatsPlots
 
 include("helpers.jl")
 include("solve_iter.jl")
@@ -7,13 +7,14 @@ include("solve_boxes.jl")
 include("solve_bb_inplace.jl")
 include("solve_boxes_inplace.jl")
 
-number_of_instances = 20
+number_of_instances = 10
 times = zeros(number_of_instances, 5)
 objectives = zeros(number_of_instances,5)
-iterations = zeros(number_of_instances, 5)
-no_sp = 1
-no_dp = 3
+gap = zeros(number_of_instances, 5)
+no_sp = 2
+no_dp = 5
 k = 3
+it = round(Int, 1 + (k-1)/(no_dp-1))
 io = open("results/main.txt", "w")
 write(io, "Solution times for $(no_sp) service points, $(no_dp) demand points, k=$(k)\norder: [BB, BB in place, box, box in place, iter]\n")
 close(io)
@@ -56,10 +57,10 @@ for n in 1:number_of_instances
 
     objectives[n,:] = [theta_general theta_general_ip theta_box theta_box_ip theta_iter[end]]
 
-    optimum = min(objectives[n,:])
+    optimum = min(objectives[n,:]...)
     opt_vec = fill(optimum, 5)
 
-    gap[n,:] = (objectives[n,:].-opt_vec)./opt_vec
+    gap[n,:] = round.((objectives[n,:].-opt_vec)./opt_vec, digits=4)
 
     #U = enum_uncset(demand_bound, loc_J_gen, cont_perc)
     #Obs = obs_obj(U, find_plan, q_v, c_gen)
@@ -110,6 +111,14 @@ if length(maxit_box_ip)> 0
     scatter!(maxit_box_ip, objectives[maxit_box_ip,4], label="cutoff box_ip")
 end
 savefig("results/objectives.png")
+
+labelnames = ["BB" "BB_ip" "Box" "Box_ip" "iter"]
+obj_plot = plot(xlabel="m", ylabel="objective")
+time_plot = plot(xlabel="m", ylabel="time in s")
+boxplot!(obj_plot, labelnames, objectives, leg=false, linewidth=2,colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],linecolour= :match,fillalpha = 0.4)
+boxplot!(time_plot, labelnames, times, leg=false, linewidth=2,colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],linecolour= :match,fillalpha = 0.4)
+savefig(obj_plot, "results/boxplot_obj.pdf")
+savefig(time_plot, "results/boxplot_time.pdf")
 #k_curve(o_v, p_v, n_val=no_sp, m_val=no_dp, rel_val=true) 
 
 

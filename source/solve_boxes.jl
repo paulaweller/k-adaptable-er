@@ -16,9 +16,9 @@ function solve_boxes(K::Int64, inst::AllocationInstance)
     iteration = 0 # iteration counter
 
     
-    while zeta > 1e-6 && (runtime <= 240.0)
+    while zeta > 1e-6 && (runtime <= 120.0)
         iteration = iteration + 1
-        push!(tau, round.(d, digits=4))
+        push!(tau, ceil.(round.(d, digits=4)))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
 
@@ -80,6 +80,9 @@ function solve_scenario_based_boxes(tau::Vector{Vector{Float64}}, inst::Allocati
     set_remaining_time(rm, time_start)
     # solve
     optimize!(rm)
+    if result_count(rm) == 0
+        return 1e10, zeros(Float64, I), zeros(Float64, I, J, K), zeros(Float64, J, K), zeros(Float64, J,K)
+    end
     theta = value(obj)
     x = value.(w)
     y = value.(q)
@@ -118,6 +121,8 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::
 
     set_remaining_time(us, time_start)
     optimize!(us)
-
+    if result_count(us) == 0
+        return 0.0, zeros(Float64, J)
+    end
     return value.(zeta), value.(d)
 end

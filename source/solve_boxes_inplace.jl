@@ -17,10 +17,10 @@ function solve_boxes_inplace(K::Int64, inst::AllocationInstance)
     zeta, d = solve_separation_problem_box(separation_modell, time_start)
     iteration = 0 # iteration counter
 
-    while zeta > 1e-6 && (runtime <= 240.0)
+    while zeta > 1e-6 && (runtime <= 120.0)
         iteration = iteration + 1
 
-        update_scenario_based_box!(scenario_modell, K, round.(d, digits = 4))
+        update_scenario_based_box!(scenario_modell, K, ceil.(round.(d, digits = 4)))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start)
 
@@ -93,6 +93,10 @@ end
 function solve_scenario_based_box(scenario_model::Model, time_start::DateTime)
     set_remaining_time(scenario_model, time_start)
     optimize!(scenario_model)
+    if result_count(scenario_model) == 0
+        I, J, K = size(scenario_model[:q])
+        return 1e10, zeros(Float64, I), zeros(Float64, I, J, K), zeros(Float64, J, K), zeros(Float64, J,K)
+    end
     theta::Float64 = value(scenario_model[:obj])
     x::Vector{Float64} = value.(scenario_model[:w])
     y::Array{Float64,3} = value.(scenario_model[:q])
@@ -140,6 +144,10 @@ end
 function solve_separation_problem_box(sepmodel::Model, time_start::DateTime)    
     set_remaining_time(sepmodel, time_start)
     optimize!(sepmodel)
+    if result_count(sepmodel) == 0
+        J = length(sepmodel[:d])
+        return 0.0, zeros(Float64, J)
+    end
     zeta_val::Float64 = value(sepmodel[:zeta])
     d_val::Vector{Float64} = value.(sepmodel[:d])
     return zeta_val, d_val

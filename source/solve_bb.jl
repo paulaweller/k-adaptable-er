@@ -22,7 +22,7 @@ function solve_bb_general(K::Int64, inst::AllocationInstance)
     s_i = zeros(Float64, J,K)           # second-stage slack variables
     it = 0              # iteration count
     
-    while (isempty(N) == false) && (runtime <= 240.0) # stop after 240 s
+    while (isempty(N) == false) && (runtime <= 120.0) # stop after 120 s
         it = it + 1
         #println("number of unexplored nodes: $(length(N))")
         # select unexplored node (TODO: which one to select?)
@@ -49,7 +49,7 @@ function solve_bb_general(K::Int64, inst::AllocationInstance)
 
             else
                 Knew = number_of_childnodes(tau)
-                branch_partition!(N, tau, round.(xi,digits = 4), Knew)
+                branch_partition!(N, tau, ceil.(round.(xi,digits = 4)), Knew)
             end
 
         end

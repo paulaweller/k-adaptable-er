@@ -74,7 +74,7 @@ end
 
 function set_remaining_time(model::Model, time_start::DateTime)
     # calculate remaining time before cutoff
-    time_remaining = 240 + (time_start - now()).value/1000
+    time_remaining = 120 + (time_start - now()).value/1000
     # set solver time limit accordingly
     set_time_limit_sec(model, max(time_remaining,0))
 end

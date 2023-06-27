@@ -25,7 +25,7 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance)
     scenario_based_model = build_scenario_based(inst, K)
     separation_model = build_separation_problem(K, inst)
 
-    while (isempty(N) == false) && (runtime <= 240.0) # stop after 240 s
+    while (isempty(N) == false) && (runtime <= 120.0) # stop after 120 s
         it = it + 1
         # select unexplored node (TODO: which one to select?) and delete from set of unexplored nodes
         unique!(N)
@@ -50,7 +50,7 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance)
                 s_i = s
             else
                 Knew = number_of_childnodes(tau)
-                branch_partition!(N, tau, round.(xi,digits=4), Knew)
+                branch_partition!(N, tau, ceil.(round.(xi,digits=4)), Knew)
             end
 
         end
@@ -125,6 +125,7 @@ function solve_scenario_based_inplace(model::Model, time::DateTime)
     # solve model
     optimize!(model)
     if result_count(model) == 0
+        I, J, K = size(model[:q])
         return 1e10, zeros(Float64, I), zeros(Float64, I, J, K), zeros(Float64, J, K)
     end
     theta::Float64 = objective_value(model)
@@ -183,7 +184,8 @@ function solve_separation_problem_inplace(sep_model::Model, time::DateTime)
     set_remaining_time(sep_model, time)
     # optimize model
     optimize!(sep_model)
-    if result_count(us) == 0
+    if result_count(sep_model) == 0
+        J = length(sep_model[:d])
         return 1, zeros(Float64, J)
     end
     return value.(sep_model[:zeta]), value.(sep_model[:d])#round.(value.(sep_model[:d]), digits = 2)

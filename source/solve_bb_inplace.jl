@@ -116,7 +116,7 @@ function update_scenario_based!(model::Model, tau::Vector{Vector{Vector{Float64}
     J = size(model[:s],1)
     I = size(model[:w],1)
     # add new demand constraints
-    @constraint(model, demand_con[k=1:K, xi=tau[k], j=1:J], sum(model[:q][i,j,k] for i in 1:I)+model[:s][j,k] >= xi[j])
+    @constraint(model, demand_con[k=1:K,xi=tau[k],j=1:J], sum(model[:q][i,j,k] for i in 1:I)+model[:s][j,k] >= xi[j])
     nothing #return model
 end
 

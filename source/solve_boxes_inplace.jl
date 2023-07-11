@@ -58,7 +58,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
     @variable(rm, 0 <= s[1:J, 1:K] <= D, Int)       # One set of variables per cell
     @variable(rm, 0 <= ξ[1:J, 1:K] <= D)            # Worst-case scenarios for each box 
-    v = rm[:v] = @variable(rm, [1:1, 1:K], binary = true, base_name = "v")                 # which box does scenario t belong to
+    # v = rm[:v] = @variable(rm, [1:1, 1:K], binary = true, base_name = "v")                 # which box does scenario t belong to
     
     @constraint(rm, sum(w[i] for i in 1:I) <= W)                    # supply limit
     @constraint(rm, [i=1:I,k=1:K], sum(q[i,j,k] for j in 1:J) <= w[i])    # service point limit
@@ -79,13 +79,19 @@ end
 
 function update_scenario_based_box!(scenario_model::Model, K::Int64, scenario::Vector{Float64})
 
-    t = size(scenario_model[:v],1)+1
+    # t = size(scenario_model[:v],1)+1
     J = size(scenario_model[:s],1)
-    v_new = @variable(scenario_model, [[t], 1:K], binary = true, base_name = "v")
-    scenario_model[:v] = [scenario_model[:v]; v_new]
+    # v_new = @variable(scenario_model, [[t], 1:K], binary = true, base_name = "v")
+    # scenario_model[:v] = [sckenario_model[:v]; v_new]
 
-    @constraint(scenario_model, sum(scenario_model[:v][t,k] for k=1:K) >= 1)        # every demand scenario must be covered by at least one plan
-    @constraint(scenario_model, [j=1:J,k=1:K], scenario[j]*scenario_model[:v][t,k] <= scenario_model[:ξ][j,k])   # if plan k covers scenario tau[t], it must be componentwise larger
+    # @constraint(scenario_model, sum(scenario_model[:v][t,k] for k=1:K) >= 1)        # every demand scenario must be covered by at least one plan
+    # @constraint(scenario_model, [j=1:J,k=1:K], scenario[j]*scenario_model[:v][t,k] <= scenario_model[:ξ][j,k])   # if plan k covers scenario tau[t], it must be componentwise larger
+
+    v_new = @variable(scenario_model, [1:K], binary = true)
+    # scenario_model[:v] = [sckenario_model[:v]; v_new]
+
+    @constraint(scenario_model, sum(v_new[k] for k=1:K) >= 1)        # every demand scenario must be covered by at least one plan
+    @constraint(scenario_model, [k=1:K,j=1:J], scenario[j]*v_new[k] <= scenario_model[:ξ][j,k])   # if plan k covers scenario tau[t], it must be componentwise larger
 
     nothing #return scenario_model
 end

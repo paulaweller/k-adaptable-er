@@ -15,7 +15,7 @@ include("solve_bb_inplace.jl")
 # seed 9,7 is great
 #61 weird
 sn = 2
-dn = 10
+dn = 15
 k = 2
 sed = rand(1:500)
 @show inst_gen = generate_instance(2,4, sed)
@@ -31,11 +31,11 @@ it = round(Int, 1 + (k-1)/(dn-1))
 
 # @btime x_box2, y_box2, s_box2, xi_box2, theta_box2, it_box2, runtime_box2 = solve_boxes_inplace(k, inst_gen)
 
-x_general, y_general, s_general, theta_general, it_general, runtime_general = solve_bb_general(k, inst_gen)
+@show x_general, y_general, s_general, theta_general, it_general, runtime_general = solve_bb_general(k, inst_gen)
 
-x_gen2, y_gen2, s_gen2, theta_gen2, it_gen2, runtime_gen2 = solve_bb_inplace(k, inst_gen)
+@show x_gen2, y_gen2, s_gen2, theta_gen2, it_gen2, runtime_gen2 = solve_bb_inplace(k, inst_gen)
 
-# nothing
+nothing
 # x_diff = x_general - x_box
 # y_diff = y_general - y_box
 # println("BB vs. box idea solution:\n 

@@ -48,6 +48,7 @@ function solve_scenario_based_boxes(tau::Vector{Vector{Float64}}, inst::Allocati
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
+    set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
     @expression(rm, slack_coeff, 10*max(c...))                  # coefficient for slack variables in objective
@@ -100,6 +101,7 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_box); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
     set_string_names_on_creation(us, false) # disable string names for performance improvement
+    set_optimizer_attribute(us, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
     
 
     @variable(us, zeta)     # amount of violation

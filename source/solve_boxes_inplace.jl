@@ -50,6 +50,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
+    set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
     @expression(rm, slack_coeff, 10.0*norm(c,Inf))                  # coefficient for slack variables in objective
@@ -120,6 +121,7 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_val
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
     set_string_names_on_creation(us, false) # disable string names for performance improvement
+    set_optimizer_attribute(us, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
     
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?

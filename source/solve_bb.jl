@@ -85,6 +85,7 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::Alloca
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
+    set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
     @expression(rm, slack_coeff, 10.0*norm(c,Inf))                  # coefficient for slack variables in objective
@@ -141,6 +142,7 @@ function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_bb); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
     set_string_names_on_creation(us, false) # disable string names for performance improvement
+    set_optimizer_attribute(us, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
 
     @variable(us, zeta)     # amount of violation
     @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?

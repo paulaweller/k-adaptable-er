@@ -6,7 +6,7 @@ const GRB_ENV_bb_inplace = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_bb_inplace(K::Int64, inst::AllocationInstance)
+function solve_bb_inplace(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
     time_start = now()  # measure start of runtime
     runtime = 0.0         # initiate variable for runtime
     I = size(inst.loc_I, 2)
@@ -25,7 +25,7 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance)
     scenario_based_model = build_scenario_based(inst, K)
     separation_model = build_separation_problem(K, inst)
 
-    while (isempty(N) == false) && (runtime <= 120.0) # stop after 120 s
+    while (isempty(N) == false) && (runtime <= time_limit)
         it = it + 1
         # select unexplored node (TODO: which one to select?) and delete from set of unexplored nodes
         unique!(N)
@@ -33,13 +33,13 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance)
         # update model
         update_scenario_based!(scenario_based_model, tau)
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
-        theta, x, y, s = solve_scenario_based_inplace(scenario_based_model, time_start)
+        theta, x, y, s = solve_scenario_based_inplace(scenario_based_model, time_start, time_limit)
 
         if theta < theta_i
             # update separation problem
             update_separation_problem!(separation_model, y, s)
             #(ζ, \xi, z)$ = Solve Separation Problem (8): max $ζ$ where $ζ$ is the amount of violation of the uncertain constraints and $\xi$ is the scenario that leads to violation
-            zeta, xi = solve_separation_problem_inplace(separation_model, time_start)
+            zeta, xi = solve_separation_problem_inplace(separation_model, time_start, time_limit)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
             if zeta <= 1e-6 # no violations
@@ -120,8 +120,8 @@ function update_scenario_based!(model::Model, tau::Vector{Vector{Vector{Float64}
     nothing #return model
 end
 
-function solve_scenario_based_inplace(model::Model, time::DateTime)
-    set_remaining_time(model, time)
+function solve_scenario_based_inplace(model::Model, time::DateTime, time_limit::Float64)
+    set_remaining_time(model, time, time_limit)
     # solve model
     optimize!(model)
     if result_count(model) == 0
@@ -180,8 +180,8 @@ function update_separation_problem!(sep_model::Model, y_value::Array{Float64, 3}
     nothing #return sep_model
 end
 
-function solve_separation_problem_inplace(sep_model::Model, time::DateTime)
-    set_remaining_time(sep_model, time)
+function solve_separation_problem_inplace(sep_model::Model, time::DateTime, time_limit::Float64)
+    set_remaining_time(sep_model, time, time_limit)
     # optimize model
     optimize!(sep_model)
     if result_count(sep_model) == 0

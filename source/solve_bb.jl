@@ -6,7 +6,7 @@ const GRB_ENV_bb = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_bb_general(K::Int64, inst::AllocationInstance)
+function solve_bb_general(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
     time_start = now()
     runtime = 0.0
     I = size(inst.loc_I, 2)
@@ -22,7 +22,7 @@ function solve_bb_general(K::Int64, inst::AllocationInstance)
     s_i = zeros(Float64, J,K)           # second-stage slack variables
     it = 0              # iteration count
     
-    while (isempty(N) == false) && (runtime <= 120.0) # stop after 120 s
+    while (isempty(N) == false) && (runtime <= time_limit) # stop after 120 s
         it = it + 1
         #println("number of unexplored nodes: $(length(N))")
         # select unexplored node (TODO: which one to select?)
@@ -31,12 +31,12 @@ function solve_bb_general(K::Int64, inst::AllocationInstance)
         tau = popfirst!(N)
 
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
-        theta, x, y, s = solve_scenario_based(tau, inst, time_start)
+        theta, x, y, s = solve_scenario_based(tau, inst, time_start, time_limit)
         #println("theta = $(theta), theta_i = $(theta_i)")
         if theta < theta_i
 
             #(ζ, \xi, z)$ = Solve Separation Problem (8): max $ζ$ where $ζ$ is the amount of violation of the uncertain constraints and $\xi$ is the scenario that leads to violation
-            zeta, xi = solve_separation_problem_general(y, s, inst, time_start)
+            zeta, xi = solve_separation_problem_general(y, s, inst, time_start, time_limit)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
             if zeta <= 1e-6 # no violations
@@ -72,7 +72,7 @@ end
 
 Solve the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::AllocationInstance, time_start::DateTime)
+function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::AllocationInstance, time_start::DateTime, time_limit::Float64)
 
     loc_I = inst.loc_I
     loc_J = inst.loc_J
@@ -114,7 +114,7 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::Alloca
         end
  
     end
-    set_remaining_time(rm, time_start)
+    set_remaining_time(rm, time_start, time_limit)
     # solve
     optimize!(rm)
     if result_count(rm) == 0
@@ -128,7 +128,7 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::Alloca
     return theta, x, y, s_val
 end
 
-function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,2}, inst::AllocationInstance, time_start::DateTime)
+function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,2}, inst::AllocationInstance, time_start::DateTime, time_limit::Float64)
     
     loc_I = inst.loc_I
     loc_J = inst.loc_J
@@ -159,7 +159,7 @@ function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,
 
     @objective(us, Max, zeta)
 
-    set_remaining_time(us, time_start)
+    set_remaining_time(us, time_start, time_limit)
     optimize!(us)
 
     if result_count(us) == 0

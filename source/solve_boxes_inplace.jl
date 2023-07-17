@@ -6,27 +6,27 @@ const GRB_ENV_box_inplace = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_boxes_inplace(K::Int64, inst::AllocationInstance)
+function solve_boxes_inplace(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
     time_start = now()
     runtime = 0.0
 
     scenario_modell = build_scenario_based_box(inst, K)
-    theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start)
+    theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start, time_limit)
 
     separation_modell = build_separation_problem_box(inst, K, xi)
-    zeta, d = solve_separation_problem_box(separation_modell, time_start)
+    zeta, d = solve_separation_problem_box(separation_modell, time_start, time_limit)
     iteration = 0 # iteration counter
 
-    while zeta > 1e-6 && (runtime <= 120.0)
+    while zeta > 1e-6 && (runtime <= time_limit)
         iteration = iteration + 1
 
         update_scenario_based_box!(scenario_modell, K, ceil.(round.(d, digits = 4)))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
-        theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start)
+        theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start, time_limit)
 
         # find violations
         update_separation_problem_box!(separation_modell, xi)
-        zeta, d = solve_separation_problem_box(separation_modell, time_start)
+        zeta, d = solve_separation_problem_box(separation_modell, time_start, time_limit)
         runtime = (now()-time_start).value/1000
     end
     
@@ -96,8 +96,8 @@ function update_scenario_based_box!(scenario_model::Model, K::Int64, scenario::V
     nothing #return scenario_model
 end
 
-function solve_scenario_based_box(scenario_model::Model, time_start::DateTime)
-    set_remaining_time(scenario_model, time_start)
+function solve_scenario_based_box(scenario_model::Model, time_start::DateTime, time_limit::Float64)
+    set_remaining_time(scenario_model, time_start, time_limit)
     optimize!(scenario_model)
     if result_count(scenario_model) == 0
         I, J, K = size(scenario_model[:q])
@@ -147,8 +147,8 @@ function update_separation_problem_box!(sepmodel::Model, ξ_val::Array{Float64,2
     nothing #return sepmodel
 end
 
-function solve_separation_problem_box(sepmodel::Model, time_start::DateTime)    
-    set_remaining_time(sepmodel, time_start)
+function solve_separation_problem_box(sepmodel::Model, time_start::DateTime, time_limit::Float64)    
+    set_remaining_time(sepmodel, time_start, time_limit)
     optimize!(sepmodel)
     if result_count(sepmodel) == 0
         J = length(sepmodel[:d])

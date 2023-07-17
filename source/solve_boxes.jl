@@ -6,13 +6,13 @@ const GRB_ENV_box = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_boxes(K::Int64, inst::AllocationInstance)
+function solve_boxes(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
     time_start = now()
     runtime = 0.0
     tau = Vector{Float64}[]            # set of scenarios 
 
-    theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
-    zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start)
+    theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start, time_limit)
+    zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start, time_limit)
     iteration = 0 # iteration counter
 
     
@@ -20,10 +20,10 @@ function solve_boxes(K::Int64, inst::AllocationInstance)
         iteration = iteration + 1
         push!(tau, ceil.(round.(d, digits=4)))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
-        theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start)
+        theta, x, y, s, xi = solve_scenario_based_boxes(tau, inst, K, time_start, time_limit)
 
         # find violations
-        zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start)
+        zeta, d = solve_separation_problem_boxes(inst, K, xi, time_start, time_limit)
         runtime = (now()-time_start).value/1000
     end
     
@@ -36,7 +36,7 @@ end
 
 Solve the scenario-based K_adaptable problem for the uncertainty sets tau.
 """
-function solve_scenario_based_boxes(tau::Vector{Vector{Float64}}, inst::AllocationInstance, K::Int64, time_start::DateTime)
+function solve_scenario_based_boxes(tau::Vector{Vector{Float64}}, inst::AllocationInstance, K::Int64, time_start::DateTime, time_limit::Float64)
     loc_I = inst.loc_I
     loc_J = inst.loc_J
     I = size(loc_I, 2)
@@ -77,7 +77,7 @@ function solve_scenario_based_boxes(tau::Vector{Vector{Float64}}, inst::Allocati
     @constraint(rm, [t=1:T], sum(v[t,k] for k=1:K) >= 1)        # every demand scenario must be covered by at least one plan
     @constraint(rm, [j=1:J,t=1:T,k=1:K], tau[t][j]*v[t,k] <= ξ[j,k])   # if plan k covers scenario tau[t], it must be componentwise larger
 
-    set_remaining_time(rm, time_start)
+    set_remaining_time(rm, time_start, time_limit)
     # solve
     optimize!(rm)
     if result_count(rm) == 0
@@ -91,7 +91,7 @@ function solve_scenario_based_boxes(tau::Vector{Vector{Float64}}, inst::Allocati
     return theta, x, y, s_val, xi
 end
 
-function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::Array{Float64,2}, time_start::DateTime)
+function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::Array{Float64,2}, time_start::DateTime, time_limit::Float64)
 
     loc_J = inst.loc_J
     J = size(loc_J, 2)
@@ -119,7 +119,7 @@ function solve_separation_problem_boxes(inst::AllocationInstance, K::Int64, ξ::
 
     @objective(us, Max, zeta)
 
-    set_remaining_time(us, time_start)
+    set_remaining_time(us, time_start, time_limit)
     optimize!(us)
     if result_count(us) == 0
         return 0.0, zeros(Float64, J)

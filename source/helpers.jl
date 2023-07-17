@@ -72,9 +72,9 @@ function generate_instance(I_inst, J_inst, seed; demand_bound=5, cont_perc=0.5, 
     return instance
 end
 
-function set_remaining_time(model::Model, time_start::DateTime)
+function set_remaining_time(model::Model, time_start::DateTime, time_limit::Float64)
     # calculate remaining time before cutoff
-    time_remaining = 120 + (time_start - now()).value/1000
+    time_remaining = time_limit + (time_start - now()).value/1000
     # set solver time limit accordingly
     set_time_limit_sec(model, max(time_remaining,0))
 end

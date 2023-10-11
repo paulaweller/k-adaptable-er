@@ -28,7 +28,6 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance; time_limit::Float6
     while (isempty(N) == false) && (runtime <= time_limit)
         it = it + 1
         # select unexplored node (TODO: which one to select?) and delete from set of unexplored nodes
-        unique!(N)
         tau = popfirst!(N)
         # update model
         update_scenario_based!(scenario_based_model, tau)
@@ -48,9 +47,12 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance; time_limit::Float6
                 x_i = x
                 y_i = y
                 s_i = s
+                println("incumbent found at time ", (now()-time_start).value/1000)
+
             else
                 Knew = number_of_childnodes(tau)
                 branch_partition!(N, tau, ceil.(round.(xi,digits=4)), Knew)
+                unique!(N)
             end
 
         end

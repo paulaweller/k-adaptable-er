@@ -1,16 +1,13 @@
-using JuMP
+include("helpers_data.jl")
 
-function create_model()
-    model = Model()
-end
+# i = [generate_instance(2,3,5) for i in 1:3]
 
-function modify_model!(model)
-    z = @variable(model, [1:2])
-    @constraint(model, z[1]+z[2] <= 4)
-end
+# println(i)
 
-m = create_model()
-print(m)
-modify_model!(m)
-modify_model!(m)
-print(m)
+# write_instance_to_file(i, "datatest")
+
+#ins = read_instance_from_file("data/datatest.txt")
+
+#print(ins)
+
+insti = read_instance_from_file("data/datatest.txt")

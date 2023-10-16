@@ -47,7 +47,7 @@ function solve_bb_inplace(K::Int64, inst::AllocationInstance; time_limit::Float6
                 x_i = x
                 y_i = y
                 s_i = s
-                println("incumbent found at time ", (now()-time_start).value/1000)
+                #println("incumbent found at time ", (now()-time_start).value/1000)
 
             else
                 Knew = number_of_childnodes(tau)

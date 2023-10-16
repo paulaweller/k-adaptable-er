@@ -182,6 +182,7 @@ function k_adapt_solution(it::Int64, inst::AllocationInstance)
     p_val = Int64[]      # number pf cells
     p_true = Int64[]     # number of plans
 
+    starttime = now()
     # q_it = 0
     for i in 1:it
         #println("Iteration $i started.")
@@ -192,14 +193,15 @@ function k_adapt_solution(it::Int64, inst::AllocationInstance)
         push!(p_val, p_it)
         push!(p_true, p_true_it)
     end    
-
+    endtime = now()
+    runtime = (endtime-starttime).value/1000
     #= println("k-adaptable solution")
     println("objectives: $obj_val")
     println("supply status = $w_val")
     println("transportation: $(q_val)")
     println("number of cells: $p_val")
     println("actual number of cells: $p_val") =#
-    return obj_val, w_val, q_val, p_val, p_true
+    return obj_val, w_val, q_val, p_val, p_true, runtime
 end
 
 

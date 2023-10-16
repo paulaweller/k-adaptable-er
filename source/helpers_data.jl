@@ -19,6 +19,31 @@ struct AllocationInstance
     pc::Float64
 end
 
+"""
+    print_instance(instance)
+
+Print instance data.
+"""
+function print_instance(inst; all=false)
+    I = size(inst.loc_I, 2)
+    J = size(inst.loc_J, 2)
+    s_locations = [(inst.loc_I[1,i], inst.loc_I[2,i]) for i in 1:I]
+    d_locations = [(inst.loc_J[1,j], inst.loc_J[2,j]) for j in 1:J]
+    println("Instance data:")
+    print("\tService locations:")
+    for i in 1:I 
+        print(" ", s_locations[i])
+    end
+    print("\n\tDemand locations: ")
+    for j in 1:J
+        print(" ", d_locations[j])
+    end
+    print("\n")
+    if all==true
+        println("\tW = $(inst.W),   D = $(inst.D),   pc = $(inst.pc)")
+    end
+end
+
 
 """
     generate_instance(I_inst, J_inst, seed, demand_bound=5, cont_perc=0.5, agg_supply_bound=round(Int, cont_perc*demand_bound*J), plot_loc=false)

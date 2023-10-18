@@ -1,5 +1,0 @@
-Solution times for 1 service points, 4 demand points, k=4
-order: [BB, iter, box]
-seed: 824,	 times: [115.0, 4.119, 28.532] s 	 objectives: [101.0, 1082.059582026719, 856.2605649843905] 	 iterations: [97.0, 3.0, 40.0]
-seed: 926,	 times: [115.0, 0.157, 43.592] s 	 objectives: [101.0, 807.0724081543547, 579.1570497143372] 	 iterations: [97.0, 2.0, 64.0]
-seed: 916,	 times: [115.0, 0.162, 69.513] s 	 objectives: [101.0, 810.9784915152381, 654.7734979971052] 	 iterations: [97.0, 1.0, 69.0]

@@ -1,12 +1,12 @@
 using JuMP, Gurobi
-const GRB_ENV_box_inplace = Gurobi.Env()
+const GRB_ENV_box = Gurobi.Env()
 
 """
-    solve_boxes_inplace(K, inst)
+    solve_box(K, inst)
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_boxes_inplace(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
+function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
     time_start = now()
     runtime = 0.0
 
@@ -35,7 +35,7 @@ function solve_boxes_inplace(K::Int64, inst::AllocationInstance; time_limit::Flo
 end
 
 """
-    build_scenario_based_boxes(inst, K)
+    build_scenario_based_box(inst, K)
 
 Build the scenario-based K_adaptable problem.
 """
@@ -47,7 +47,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     D = inst.D
     W = inst.W
     
-    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
     set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
@@ -118,7 +118,7 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_val
     J = size(loc_J, 2)
     D = inst.D
     pc = inst.pc
-    us = Model(() -> Gurobi.Optimizer(GRB_ENV_box_inplace); add_bridges = false)
+    us = Model(() -> Gurobi.Optimizer(GRB_ENV_box); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
     set_string_names_on_creation(us, false) # disable string names for performance improvement
     set_optimizer_attribute(us, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)

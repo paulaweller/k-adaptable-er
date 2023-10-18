@@ -6,7 +6,7 @@ const GRB_ENV_bb = Gurobi.Env()
 
 Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam et al. 
 """
-function solve_bb_general(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
+function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
     time_start = now()
     runtime = 0.0
     I = size(inst.loc_I, 2)

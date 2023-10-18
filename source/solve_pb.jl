@@ -4,7 +4,7 @@
 #-----------------------------------------------------------------------
 
 using JuMP, LinearAlgebra, Gurobi
-const GRB_ENV_iter = Gurobi.Env()
+const GRB_ENV_pb = Gurobi.Env()
 
 import Random
 
@@ -38,7 +38,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     P = length(leaf_scenarios)  # Number of cells
 
     # Initialize the RO model
-    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter); add_bridges = false)
+    rm = Model(() -> Gurobi.Optimizer(GRB_ENV_pb); add_bridges = false)
     set_silent(rm)
     set_string_names_on_creation(rm, false) # disable string names for performance improvement
     set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
@@ -126,7 +126,7 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Float64, loc_J::Matrix{F
     J = size(loc_J,2)
     leaf_scenarios = filter(is_leaf, scenario_tree)
     # Define the separation model
-    sm = Model(() -> Gurobi.Optimizer(GRB_ENV_iter); add_bridges = false)
+    sm = Model(() -> Gurobi.Optimizer(GRB_ENV_pb); add_bridges = false)
     set_silent(sm)
     set_string_names_on_creation(sm, false) # disable string names for performance improvement
     set_optimizer_attribute(sm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
@@ -169,10 +169,10 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Float64, loc_J::Matrix{F
 end
 
 """
-    k_adapt_solution(it, inst)
-Solve the problem for the parameters with it iterations.
+    solve_pb(it, inst)
+Solve the problem  with the partition-and-bound menthod for the parameters with it iterations.
 """
-function k_adapt_solution(it::Int64, inst::AllocationInstance)
+function solve_pb(it::Int64, inst::AllocationInstance)
     # Start with no partitions (i.e., one scenario)
     scenario_tree = [ TreeScenario(zeros(4),nothing,[]) ]
     # store these values for every iteration:

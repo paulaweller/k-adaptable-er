@@ -13,7 +13,8 @@ Calculate k-adaptabe solution for an instance of the preallocation problem, usin
 """
 function run_instance(k, problem_instance; tlim=250.0, pb=true, box=false, box_inplace=true, bb=true, bb_inplace=false)
 
-    results = Dict()  # for storing results TODO make dictionaries to retain column names
+    results = Dict()  # for storing single-value results 
+
     println("\n")
     if pb==true
         # how many iterations are necessary for a k-adaptable solution?
@@ -23,10 +24,10 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=false, box_i
         theta_pb, x_pb, y_pb, p_pb, p_true_pb, runtime_pb = k_adapt_solution(it, problem_instance)  # TODO rename method to partition-and-bound AND time limit?
         results_pb = Dict(
             :θ_pb       => theta_pb, 
-            :x_pb       => x_pb, 
-            :y_pb       => y_pb, 
-            :p_pb       => p_pb, 
-            :p_true_pb  => p_true_pb, 
+            # :x_pb       => x_pb, 
+            # :y_pb       => y_pb, 
+            # :p_pb       => p_pb, 
+             :p_true_pb  => p_true_pb, 
             :runtime_pb => runtime_pb
         )
         merge!(results, results_pb)
@@ -36,10 +37,10 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=false, box_i
         println("Starting box-and-cut...")
         x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_boxes(k, problem_instance) # TODO time limit?
         results_box = Dict(
-            :x_box       => x_box, 
-            :y_box       => y_box, 
-            :s_box       => s_box, 
-            :ξ_box       => xi_box, 
+            # :x_box       => x_box, 
+            # :y_box       => y_box, 
+            # :s_box       => s_box, 
+            # :ξ_box       => xi_box, 
             :θ_box       => theta_box, 
             :it_box      => it_box, 
             :runtime_box => runtime_box
@@ -51,10 +52,10 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=false, box_i
         println("Starting box-and-cut inplace version...")
         x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_boxes_inplace(k, problem_instance, time_limit = tlim)
         results_box_inplace = Dict(
-            :x_box_inplace       => x_box, 
-            :y_box_inplace       => y_box, 
-            :s_box_inplace       => s_box, 
-            :ξ_box_inplace       => xi_box, 
+            # :x_box_inplace       => x_box, 
+            # :y_box_inplace       => y_box, 
+            # :s_box_inplace       => s_box, 
+            # :ξ_box_inplace       => xi_box, 
             :θ_box_inplace       => theta_box, 
             :it_box_inplace      => it_box, 
             :runtime_box_inplace => runtime_box
@@ -64,11 +65,12 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=false, box_i
     end
     if bb==true
         println("Starting branch-and-bound...")
-        x_general, y_general, s_general, theta_general, it_general, runtime_general = solve_bb_general(k, problem_instance, time_limit = tlim) # TODO save partition?
+        x_general, y_general, s_general, partition, theta_general, it_general, runtime_general = solve_bb_general(k, problem_instance, time_limit = tlim) # TODO save partition?
         results_bb = Dict(
-            :x_bb           => x_general, 
-            :y_bb           => y_general, 
-            :s_bb           => s_general, 
+            # :x_bb           => x_general, 
+            # :y_bb           => y_general, 
+            # :s_bb           => s_general, 
+            # :partition_bb   => partition,
             :θ_bb           => theta_general, 
             :it_bb          => it_general, 
             :runtime_bb     => runtime_general
@@ -78,11 +80,12 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=false, box_i
     end
     if bb_inplace==true
         println("Starting branch-and-bound inplace version...")
-        x_gen2, y_gen2, s_gen2, theta_gen2, it_gen2, runtime_gen2 = solve_bb_inplace(k, problem_instance, time_limit = tlim) # TODO save partition?
+        x_gen2, y_gen2, s_gen2, partition_gen2, theta_gen2, it_gen2, runtime_gen2 = solve_bb_inplace(k, problem_instance, time_limit = tlim) # TODO save partition?
         results_bb_inplace = Dict(
-            :x_bb_inplace           => x_gen2, 
-            :y_bb_inplace           => y_gen2, 
-            :s_bb_inplace           => s_gen2, 
+            # :x_bb_inplace           => x_gen2, 
+            # :y_bb_inplace           => y_gen2, 
+            # :s_bb_inplace           => s_gen2,
+            # :partition_bb_inplace   => partition_gen2, 
             :θ_bb_inplace           => theta_gen2, 
             :it_bb_inplace          => it_gen2, 
             :runtime_bb_inplace     => runtime_gen2

@@ -201,7 +201,7 @@ function k_adapt_solution(it::Int64, inst::AllocationInstance)
     println("transportation: $(q_val)")
     println("number of cells: $p_val")
     println("actual number of cells: $p_val") =#
-    return obj_val, w_val, q_val, p_val, p_true, runtime
+    return obj_val[end], w_val[end], q_val[end], p_val[end], p_true[end], runtime
 end
 
 

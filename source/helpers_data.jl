@@ -141,6 +141,7 @@ function read_instance_from_file(filename::String)
         inst = eval(Meta.parse(ln))
         push!(instances, inst)
     end
+    close(io)
 
     return instances
 end

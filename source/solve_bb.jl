@@ -20,6 +20,7 @@ function solve_bb_general(K::Int64, inst::AllocationInstance; time_limit::Float6
     x_i = Float64[]            # first-stage solution
     y_i = zeros(Float64,I,J,K)            # second-stage solution
     s_i = zeros(Float64, J,K)           # second-stage slack variables
+    best_partition = Vector{Vector{Float64}}[Iterators.repeated(Vector{Float64}[],K)...]
     it = 0              # iteration count
     
     while (isempty(N) == false) && (runtime <= time_limit) # stop after 120 s
@@ -46,6 +47,7 @@ function solve_bb_general(K::Int64, inst::AllocationInstance; time_limit::Float6
                 x_i = x
                 y_i = y
                 s_i = s
+                best_partition = tau
                 #println("incumbent found at time ", (now()-time_start).value/1000)
 
             else
@@ -64,7 +66,7 @@ function solve_bb_general(K::Int64, inst::AllocationInstance; time_limit::Float6
 
     else
 
-        return x_i, y_i, s_i, theta_i, it, runtime
+        return x_i, y_i, s_i, best_partition, theta_i, it, runtime
 
     end
 end

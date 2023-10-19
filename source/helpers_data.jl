@@ -46,9 +46,9 @@ end
 
 
 """
-    generate_instance(I_inst, J_inst, seed, demand_bound=5, cont_perc=0.5, agg_supply_bound=round(Int, cont_perc*demand_bound*J), plot_loc=false)
+    generate_instance(I_inst, J_inst, seed, cont_perc=0.1, plot_loc=false, loc_max=100)
 
-Generate a problem instance with the given parameters. Returns: loc_I_inst, loc_J_inst, demand_bound, cont_perc, agg_supply_bound
+Generate a problem instance with the given parameters.
 
 Fields:
 
@@ -88,8 +88,9 @@ function generate_instance(I_inst, J_inst, seed; cont_perc=0.1, plot_loc=false, 
     loc_I_inst = sort(loc_I_inst, dims=2)
     loc_J_inst = sort(loc_J_inst, dims=2)
 
-    demand_bounds = rand(1:100, J_inst)
-    agg_supply_bound = cont_perc*sum(demand_bounds)
+    demand_bounds = convert(Vector{Float64}, rand(1:100, J_inst))
+    
+    agg_supply_bound = floor(cont_perc*sum(demand_bounds))
 
     instance = AllocationInstance(loc_I_inst,loc_J_inst,agg_supply_bound,demand_bounds,cont_perc)
     # plot service and demand points

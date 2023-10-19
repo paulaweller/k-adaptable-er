@@ -19,12 +19,11 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=true, bb=tru
         it = round(Int, 1 + (k-1)/(dn-1))
         # run partition-and-bound method
         println("Starting partition-and-bound...")
-        theta_pb, x_pb, y_pb, p_pb, p_true_pb, runtime_pb = solve_pb(it, problem_instance)  # TODO rename method to partition-and-bound AND time limit?
+        theta_pb, x_pb, y_pb, p_pb, p_true_pb, runtime_pb = solve_pb(it, problem_instance, time_limit = tlim)  # TODO time limit?
         results_pb = Dict(
             :θ_pb       => theta_pb, 
             # :x_pb       => x_pb, 
-            # :y_pb       => y_pb, 
-            # :p_pb       => p_pb, 
+            # :y_pb       => y_pb,  
              :p_true_pb  => p_true_pb, 
             :runtime_pb => runtime_pb
         )
@@ -33,7 +32,7 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=true, bb=tru
     end
     if box==true
         println("Starting box-and-cut...")
-        x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_box(k, problem_instance) # TODO time limit?
+        x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_box(k, problem_instance, time_limit = tlim) # TODO time limit?
         results_box = Dict(
             # :x_box       => x_box, 
             # :y_box       => y_box, 

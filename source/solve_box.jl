@@ -133,7 +133,7 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_val
     fix.(xi, ξ_value; force = true)
 
     # d must be in the uncertainty set
-    @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*sum(D)))   # bound on aggregated demand
+    @constraint(us, sum(d[j] for j in 1:J) <= floor(pc*sum(D)))   # bound on aggregated demand
     for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end

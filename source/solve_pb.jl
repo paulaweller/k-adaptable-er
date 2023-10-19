@@ -26,8 +26,7 @@ Solve the two-stage problem with one partition of the uncertainty
 set for every leaf scenario in the `scenario_tree`. At optimality, grows the
 tree given the new scenarios obtained.
 """
-function solve_partitioned_problem(inst::AllocationInstance,
-                                   scenario_tree::Vector{TreeScenario})
+function solve_partitioned_problem(inst::AllocationInstance, scenario_tree::Vector{TreeScenario}, time_start, time_limit)
 
     I = size(inst.loc_I, 2)
     J = size(inst.loc_J, 2)
@@ -82,7 +81,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
         s_val = callback_value.(cb_data, s)
         for p in 1:P
             for j in 1:J
-                d_val, d_scenario = solve_sep(p, j, inst.pc, inst.D, inst.loc_J, leaf_scenarios)
+                d_val, d_scenario = solve_sep(p, j, inst.pc, inst.D, inst.loc_J, leaf_scenarios, time_start, time_limit)
                 push!(worst_case_scenarios, d_scenario)
                 if sum(y_val[i,j,p] for i in 1:I)+s_val[j,p] < d_val
                     con = @build_constraint(sum(q[i,j,p] for i in 1:I)+s[j,p] >= d_val)
@@ -93,6 +92,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     end
     MOI.set(rm, MOI.LazyConstraintCallback(), my_callback_function)
 
+    set_remaining_time(rm, time_start, time_limit)
     # Solve
     optimize!(rm)                         
     # Extend the scenario tree
@@ -125,7 +125,7 @@ end
     solve_sep(p, dn, pc, D, loc_J, scenario_tree)
 Solve the separation problem for cell p and demand node dn. Returns worst-case d[dn] and d.
 """
-function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Vector{Float64}, loc_J::Matrix{Float64}, scenario_tree)
+function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Vector{Float64}, loc_J::Matrix{Float64}, scenario_tree, time_start, time_limit)
     J = size(loc_J,2)
     leaf_scenarios = filter(is_leaf, scenario_tree)
     # Define the separation model
@@ -137,7 +137,7 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Vector{Float64}, loc_J::
     @variable(sm, 0 <= d[1:J])
     @constraint(sm, [j=1:J], d[j] <= D[j])
     # bound on aggregated demand
-    @constraint(sm, sum(d[j] for j in 1:J) <= round(Int, pc*sum(D)))
+    @constraint(sm, sum(d[j] for j in 1:J) <= floor(pc*sum(D)))
 
     # for each pair of demand points, add constraint that if locations are close, demand values must be close, too
     for j2 in 1:J
@@ -167,6 +167,8 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Vector{Float64}, loc_J::
     end
 
     @objective(sm, Max, d[dn])
+
+    set_remaining_time(sm, time_start, time_limit)
     optimize!(sm)
     worst_case_value = objective_value(sm)
     return worst_case_value, value.(d)
@@ -176,7 +178,7 @@ end
     solve_pb(it, inst)
 Solve the problem  with the partition-and-bound menthod for the parameters with it iterations.
 """
-function solve_pb(it::Int64, inst::AllocationInstance)
+function solve_pb(it::Int64, inst::AllocationInstance, time_limit = 120.0)
     # Start with no partitions (i.e., one scenario)
     scenario_tree = [ TreeScenario(zeros(4),nothing,[]) ]
     # store these values for every iteration:
@@ -187,15 +189,20 @@ function solve_pb(it::Int64, inst::AllocationInstance)
     p_true = Int64[]     # number of plans
 
     starttime = now()
+    runtime = 0.0
+    i = 0
     # q_it = 0
-    for i in 1:it
+    # for i in 1:it
+    while (i<it) && (runtime <= time_limit)
         #println("Iteration $i started.")
-        obj_it, w_it, q_it, p_it, p_true_it = solve_partitioned_problem(inst, scenario_tree)
+        i = i+1
+        obj_it, w_it, q_it, p_it, p_true_it = solve_partitioned_problem(inst, scenario_tree, starttime, time_limit)
         push!(obj_val, obj_it)
         push!(w_val, w_it)
         push!(q_val, [q_it])
         push!(p_val, p_it)
         push!(p_true, p_true_it)
+        runtime = (now()-starttime).value/1000
     end    
     endtime = now()
     runtime = (endtime-starttime).value/1000

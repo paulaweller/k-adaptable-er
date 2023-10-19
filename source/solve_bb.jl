@@ -156,7 +156,7 @@ function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,
     @variable(us, z[1:K,1:J], Bin)   # violation indicator
 
     # d must be in the uncertainty set
-    @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*sum(D)))   # bound on aggregated demand
+    @constraint(us, sum(d[j] for j in 1:J) <= floor(pc*sum(D)))   # bound on aggregated demand
     for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
@@ -175,5 +175,5 @@ function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,
         return 1, zeros(Float64, J)
     end
 
-    return value.(zeta), value.(d)#round.(value.(d), digits = 2)
+    return value.(zeta), value.(d)
 end

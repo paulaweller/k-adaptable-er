@@ -32,6 +32,9 @@ function solve_partitioned_problem(inst::AllocationInstance,
     I = size(inst.loc_I, 2)
     J = size(inst.loc_J, 2)
 
+    D = inst.D
+    D_max = max(D...)
+
     # scenario_tree is a vector containing every scenario in the tree
     # We will have one cell for every leaf scenario in the tree
     leaf_scenarios = filter(is_leaf, scenario_tree)
@@ -44,7 +47,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
 
     @expression(rm, c[i=1:I,j=1:J], norm(inst.loc_I[:,i]-inst.loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 10.0*norm(c,Inf))                  # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 1000.0*norm(c,Inf))                  # coefficient for slack variables in objective
 
     # Decision variables:
     # First stage, here-and-now decision where to store supplies
@@ -52,7 +55,7 @@ function solve_partitioned_problem(inst::AllocationInstance,
     # Second stage, wait-and-see decision how to distribute and slack
     # One set of variables per cell
     @variable(rm, 0 <= q[1:I,1:J,1:P] <= inst.W, Int)
-    @variable(rm, 0 <= s[1:J, 1:P] <= inst.D, Int)
+    @variable(rm, 0 <= s[1:J, 1:P] <= D_max, Int)
     # supply limit
     @constraint(rm, sum(w[i] for i in 1:I) <= inst.W)
     # The objective function will be the maximum of the objective function
@@ -122,7 +125,7 @@ end
     solve_sep(p, dn, pc, D, loc_J, scenario_tree)
 Solve the separation problem for cell p and demand node dn. Returns worst-case d[dn] and d.
 """
-function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Float64, loc_J::Matrix{Float64}, scenario_tree)
+function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Vector{Float64}, loc_J::Matrix{Float64}, scenario_tree)
     J = size(loc_J,2)
     leaf_scenarios = filter(is_leaf, scenario_tree)
     # Define the separation model
@@ -131,9 +134,10 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Float64, loc_J::Matrix{F
     set_string_names_on_creation(sm, false) # disable string names for performance improvement
     set_optimizer_attribute(sm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
     # variables
-    @variable(sm, 0 <= d[1:J] <= D)
+    @variable(sm, 0 <= d[1:J])
+    @constraint(sm, [j=1:J], d[j] <= D[j])
     # bound on aggregated demand
-    @constraint(sm, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))
+    @constraint(sm, sum(d[j] for j in 1:J) <= round(Int, pc*sum(D)))
 
     # for each pair of demand points, add constraint that if locations are close, demand values must be close, too
     for j2 in 1:J

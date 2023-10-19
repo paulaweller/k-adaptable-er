@@ -1,4 +1,4 @@
-using LinearAlgebra, Dates, Random, Statistics, JuMP
+using Random
 
 """
     AllocationInstance(loc_I,loc_J,W,D,pc)
@@ -15,7 +15,7 @@ struct AllocationInstance
     loc_I::Array{Float64,2}
     loc_J::Array{Float64,2}
     W::Float64
-    D::Float64
+    D::Vector{Float64}
     pc::Float64
 end
 
@@ -55,13 +55,13 @@ Fields:
     I_inst              Number of service points
     J_inst              Number of demand points
     seed                For reproducibility
-    demand_bound        Upper bound of demand at one demand point
+    demand_bound        Upper bound of demand at one demand point; randomly generated in [1,100]
     cont_perc           Percentage of damage caused by the contingency
     agg_supply_bound    Aggregated supply bound, default: maximal aggregated demand 
     plot_loc            Should the locations of service and demand points be plotted?
     loc_max             How large is the grid
 """
-function generate_instance(I_inst, J_inst, seed; demand_bound=5, cont_perc=0.5, agg_supply_bound=round(Int, cont_perc*demand_bound*J_inst), plot_loc=false, loc_max=10)
+function generate_instance(I_inst, J_inst, seed; cont_perc=0.1, plot_loc=false, loc_max=100)
 
     # seed for reproducibility
     Random.seed!(seed)
@@ -88,7 +88,10 @@ function generate_instance(I_inst, J_inst, seed; demand_bound=5, cont_perc=0.5, 
     loc_I_inst = sort(loc_I_inst, dims=2)
     loc_J_inst = sort(loc_J_inst, dims=2)
 
-    instance = AllocationInstance(loc_I_inst,loc_J_inst,agg_supply_bound,demand_bound,cont_perc)
+    demand_bounds = rand(1:100, J_inst)
+    agg_supply_bound = cont_perc*sum(demand_bounds)
+
+    instance = AllocationInstance(loc_I_inst,loc_J_inst,agg_supply_bound,demand_bounds,cont_perc)
     # plot service and demand points
     if plot_loc == true
 
@@ -112,7 +115,7 @@ end
 """
     write_instance_to_file(instances,filename)
 """
-function write_instance_to_file(instances::Vector{AllocationInstance}, filename::String)
+function write_instances_to_file(instances::Vector{AllocationInstance}, filename::String)
     # inst = instances[1]
     # no_sp = size(inst.loc_I,2)
     # no_dp = size(inst.loc_J,2)
@@ -120,7 +123,7 @@ function write_instance_to_file(instances::Vector{AllocationInstance}, filename:
     # write(io, "Pre-Allocation Instances for $(no_sp) service points, $(no_dp) demand points, aggregated demand $(inst.W), maximum demand $(inst.D), affected percentage $(inst.pc)\n")
     # close(io)
 
-    io = open("data/$(filename).txt", "a")
+    io = open(filename, "w")
     for instance in instances
         print(io, instance, "\n")    
     end
@@ -132,7 +135,7 @@ end
 
 returns a vector with instances
 """
-function read_instance_from_file(filename::String)
+function read_instances_from_file(filename::String)
 
     instances = AllocationInstance[]
     io = open(filename)
@@ -144,4 +147,16 @@ function read_instance_from_file(filename::String)
     close(io)
 
     return instances
+end
+
+function write_result_to_file(filename::String, data::DataFrame)
+    output = open("results/$(filename)", "w")
+    CSV.write(output, data)
+    close(output)
+end
+
+function append_to_result_file(filename::String, data::DataFrame)
+    output = open("results/$(filename)", "a")
+    CSV.write(output, data, append=true)
+    close(output)
 end

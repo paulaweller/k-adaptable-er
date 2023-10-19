@@ -1,4 +1,4 @@
-using LinearAlgebra, DataFrames, CSV
+using DataFrames, CSV
 
 include("helpers_data.jl")
 include("helpers_solve.jl")
@@ -8,20 +8,17 @@ dn = 2              # number of demand nodes
 k = 2               # degree of adaptability
 lim = 250.0         # runtime limit in seconds
 sed = rand(1:500)   # random seed
-inst_gen = generate_instance(sn,dn, sed)
+inst_gen = generate_instance(sn,dn,sed)
 #inst_gen = AllocationInstance([5; 5], [5 10; 2 5], 5, 5, 0.5)
 
+write_instances_to_file([inst_gen], "data/datatest.txt")
 #---------------------------------------------------------------
 # initialize file
 
-results = run_instance(k, inst_gen, tlim=180.0, bb=false)
+inst_read = read_instances_from_file("data/datatest.txt")
+
+results = run_instance(k, inst_read[1], tlim=180.0, bb=false)
 
 result_data = DataFrame(results)
 
-output = open("results/resultdata.csv", "a")
-CSV.write(output, result_data)
-close(output)
-
-output = open("results/resultdata.csv", "a")
-CSV.write(output, result_data, append=true)
-close(output)
+write_result_to_file("resultdata.csv", result_data)

@@ -45,6 +45,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     I = size(loc_I, 2)
     J = size(loc_J, 2)
     D = inst.D
+    D_max = max(D...)
     W = inst.W
     
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_box); add_bridges = false)
@@ -53,12 +54,12 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 10.0*norm(c,Inf))                  # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 1000.0*norm(c,Inf))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
-    @variable(rm, 0 <= s[1:J, 1:K] <= D, Int)       # One set of variables per cell
-    @variable(rm, 0 <= ξ[1:J, 1:K] <= D)            # Worst-case scenarios for each box 
+    @variable(rm, 0 <= s[1:J, 1:K] <= D_max, Int)       # One set of variables per cell
+    @variable(rm, 0 <= ξ[1:J, 1:K] <= D_max)            # Worst-case scenarios for each box 
     # v = rm[:v] = @variable(rm, [1:1, 1:K], binary = true, base_name = "v")                 # which box does scenario t belong to
     
     @constraint(rm, sum(w[i] for i in 1:I) <= W)                    # supply limit
@@ -117,6 +118,7 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_val
     loc_J = inst.loc_J
     J = size(loc_J, 2)
     D = inst.D
+    D_max = max(D...)
     pc = inst.pc
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_box); add_bridges = false)
     set_optimizer_attribute(us, "OutputFlag", 0)
@@ -124,18 +126,19 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_val
     set_optimizer_attribute(us, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
     
     @variable(us, zeta)     # amount of violation
-    @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
+    @variable(us, 0<= d[1:J])
+    @constraint(us, [j=1:J], d[j] <= D[j])   # demand scenario // TODO: does it need to be Int?
     @variable(us, z[1:K,1:J], Bin)   # violation indicator
     @variable(us, xi[1:J, 1:K])
     fix.(xi, ξ_value; force = true)
 
     # d must be in the uncertainty set
-    @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
+    @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*sum(D)))   # bound on aggregated demand
     for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
 
-    @expression(us, M, 2*D+1)
+    @expression(us, M, 2*D_max+1)
     @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
     #@constraint(us, [k=1:K, j=1:J], zeta + ξ[j,k] <= d[j]*z[k,j])
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] - xi[j,k])

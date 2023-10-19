@@ -85,6 +85,7 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::Alloca
     K = length(tau)
     W = inst.W
     D = inst.D
+    D_max = max(D...)
 
     rm = Model(() -> Gurobi.Optimizer(GRB_ENV_bb); add_bridges = false)
     set_optimizer_attribute(rm, "OutputFlag", 0)
@@ -92,11 +93,11 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::Alloca
     set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
 
     @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 10.0*norm(c,Inf))                  # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 1000.0*norm(c,Inf))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
-    @variable(rm, 0 <= s[1:J, 1:K] <= D, Int)       # One set of variables per cell
+    @variable(rm, 0 <= s[1:J, 1:K]<= D_max, Int)       # One set of variables per cell
     
     
     @constraint(rm, sum(w[i] for i in 1:I) <= W)                    # supply limit
@@ -141,6 +142,7 @@ function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,
     J = size(loc_J, 2)
     K = size(y, 3)
     D = inst.D
+    D_max = max(D...)
     pc = inst.pc
     
     us = Model(() -> Gurobi.Optimizer(GRB_ENV_bb); add_bridges = false)
@@ -149,16 +151,17 @@ function solve_separation_problem_general(y::Array{Float64,3}, s::Array{Float64,
     set_optimizer_attribute(us, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
 
     @variable(us, zeta)     # amount of violation
-    @variable(us, 0<= d[1:J] <=D)   # demand scenario // TODO: does it need to be Int?
+    @variable(us, 0 <= d[1:J])   # demand scenario // TODO: does it need to be Int?
+    @constraint(us, [j=1:J], d[j] <= D[j])
     @variable(us, z[1:K,1:J], Bin)   # violation indicator
 
     # d must be in the uncertainty set
-    @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*D*J))   # bound on aggregated demand
+    @constraint(us, sum(d[j] for j in 1:J) <= round(Int, pc*sum(D)))   # bound on aggregated demand
     for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
         @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
     end
 
-    @expression(us, M, 2*D+1)
+    @expression(us, M, 2*D_max+1)
     @constraint(us, [k=1:K], sum(z[k,j] for j in 1:J) == 1)
     #@constraint(us, [k=1:K], zeta + M*z[k,0] <= M + slack_coeff*sum(s[j,k] for j in 1:J) + sum(c[i,j]*y[i,j,k] for i in 1:I, j in 1:J) - theta) #don't need this because objective coeffs are certain
     @constraint(us, [k=1:K, j=1:J], zeta + M*z[k,j] <= M + d[j] -( sum(y[i,j,k] for i in 1:I)+s[j,k]))

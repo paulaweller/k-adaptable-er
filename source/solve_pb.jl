@@ -178,7 +178,7 @@ end
     solve_pb(it, inst)
 Solve the problem  with the partition-and-bound menthod for the parameters with it iterations.
 """
-function solve_pb(it::Int64, inst::AllocationInstance, time_limit = 120.0)
+function solve_pb(it::Int64, inst::AllocationInstance; time_limit = 120.0)
     # Start with no partitions (i.e., one scenario)
     scenario_tree = [ TreeScenario(zeros(4),nothing,[]) ]
     # store these values for every iteration:

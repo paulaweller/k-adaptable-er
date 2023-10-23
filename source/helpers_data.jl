@@ -1,4 +1,4 @@
-using Random
+using Random, DataFrames, CSV
 
 """
     AllocationInstance(loc_I,loc_J,W,D,pc)
@@ -151,13 +151,13 @@ function read_instances_from_file(filename::String)
 end
 
 function write_result_to_file(filename::String, data::DataFrame)
-    output = open("results/$(filename)", "w")
+    output = open(filename, "w")
     CSV.write(output, data)
     close(output)
 end
 
 function append_to_result_file(filename::String, data::DataFrame)
-    output = open("results/$(filename)", "a")
+    output = open(filename, "a")
     CSV.write(output, data, append=true)
     close(output)
 end

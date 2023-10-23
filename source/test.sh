@@ -6,4 +6,4 @@
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
 module purge
 module load julia
-julia --project=. main.jl
+julia --project=. generate_ins.jl

@@ -16,7 +16,9 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=true, bb=tru
     println("\n")
     if pb==true
         # how many iterations are necessary for a k-adaptable solution?
-        it = round(Int, 1 + (k-1)/(dn-1))
+        loc_J = problem_instance.loc_J
+        J = size(loc_J, 2)
+        it = round(Int, 1 + (k-1)/(J-1))
         # run partition-and-bound method
         println("Starting partition-and-bound...")
         theta_pb, x_pb, y_pb, p_pb, p_true_pb, runtime_pb = solve_pb(it, problem_instance, time_limit = tlim)  # TODO time limit?

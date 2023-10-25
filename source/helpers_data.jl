@@ -114,7 +114,7 @@ function generate_instance(I_inst, J_inst, seed; cont_perc=0.1, plot_loc=false, 
 end
 
 """
-    write_instance_to_file(instances,filename)
+    write_instances_to_file(instances,filename)
 """
 function write_instances_to_file(instances::Vector{AllocationInstance}, filename::String)
     # inst = instances[1]
@@ -130,6 +130,25 @@ function write_instances_to_file(instances::Vector{AllocationInstance}, filename
     end
     close(io)
 end
+
+"""
+    write_instance_to_file(instances,filename)
+"""
+function add_instances_to_file(instances::Vector{AllocationInstance}, filename::String)
+    # inst = instances[1]
+    # no_sp = size(inst.loc_I,2)
+    # no_dp = size(inst.loc_J,2)
+    # io = open("data/$(filename).txt", "w")
+    # write(io, "Pre-Allocation Instances for $(no_sp) service points, $(no_dp) demand points, aggregated demand $(inst.W), maximum demand $(inst.D), affected percentage $(inst.pc)\n")
+    # close(io)
+
+    io = open(filename, "a")
+    for instance in instances
+        print(io, instance, "\n")    
+    end
+    close(io)
+end
+
 
 """
     read_instance_from_file(filename)

@@ -28,7 +28,7 @@ function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0
             :p_true_pb  => p_true_pb, 
             :runtime_pb => runtime_pb
         )
-        if return_solution==true
+        if return_solutions==true
             solutions_pb = Dict(
                 :x_pb       => x_pb, 
                 :y_pb       => y_pb,  

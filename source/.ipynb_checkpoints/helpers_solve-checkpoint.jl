@@ -9,7 +9,7 @@ include("solve_box.jl")
 
 Calculate k-adaptabe solution for an instance of the preallocation problem, using the specified algorithms. Returns results as a dictionary.
 """
-function run_instance(k, problem_instance; tlim=250.0, pb=true, box=true, bb=true)
+function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0, pb=true, box=true, bb=true, return_solutions=false)
 
     results = Dict()  # for storing single-value results 
     solutions = Dict() # for storing optimal solutions
@@ -28,12 +28,14 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=true, bb=tru
             :p_true_pb  => p_true_pb, 
             :runtime_pb => runtime_pb
         )
-        solutions_pb = Dict(
-            :x_pb       => x_pb, 
-            :y_pb       => y_pb,  
-        )
+        if return_solutions==true
+            solutions_pb = Dict(
+                :x_pb       => x_pb, 
+                :y_pb       => y_pb,  
+            )
+            merge!(solutions, solutions_pb)
+        end
         merge!(results, results_pb)
-        merge!(solutions, solutions_pb)
         println("Finished partition-and-bound. Runtime: ", runtime_pb, "s\n")
     end
     if box==true
@@ -45,14 +47,16 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=true, bb=tru
             :it_box      => it_box, 
             :runtime_box => runtime_box
         )
+        if return_solutions==true
         solutions_box = Dict(
             :x_box       => x_box, 
             :y_box       => y_box, 
             :s_box       => s_box, 
             :ξ_box       => xi_box, 
         )
-        merge!(results, results_box)
         merge!(solutions, solutions_box)
+        end
+        merge!(results, results_box)
         println("Finished box-and-cut. Runtime: ", runtime_box, "s\n")
     end
     if bb==true
@@ -64,14 +68,16 @@ function run_instance(k, problem_instance; tlim=250.0, pb=true, box=true, bb=tru
             :it_bb          => it_general, 
             :runtime_bb     => runtime_general
         )
-        solutions_bb = Dict(
-            :x_bb           => x_general, 
-            :y_bb           => y_general, 
-            :s_bb           => s_general, 
-            :partition_bb   => partition,
-        )
         merge!(results, results_bb)
-        merge!(solutions, solutions_bb)
+        if return_solutions==true
+            solutions_bb = Dict(
+                :x_bb           => x_general, 
+                :y_bb           => y_general, 
+                :s_bb           => s_general, 
+                :partition_bb   => partition,
+            )
+            merge!(solutions, solutions_bb)
+        end
         println("Finished branch-and-bound. Runtime: ", runtime_general, "s\n")
     end        
     return results, solutions

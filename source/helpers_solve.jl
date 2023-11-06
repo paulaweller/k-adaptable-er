@@ -9,7 +9,7 @@ include("solve_box.jl")
 
 Calculate k-adaptabe solution for an instance of the preallocation problem, using the specified algorithms. Returns results as a dictionary.
 """
-function run_instance(k, problem_instance; tlim=250.0, pb=true, box=true, bb=true, return_solutions=false)
+function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0, pb=true, box=true, bb=true, return_solutions=false)
 
     results = Dict()  # for storing single-value results 
     solutions = Dict() # for storing optimal solutions

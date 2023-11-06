@@ -155,7 +155,7 @@ end
 
 returns a vector with instances
 """
-function read_instances_from_file(filename::String)
+function read_all_instances_from_file(filename::String)
 
     instances = AllocationInstance[]
     io = open(filename)
@@ -167,6 +167,23 @@ function read_instances_from_file(filename::String)
     close(io)
 
     return instances
+end
+
+function read_one_instance_from_file(line::Int64, filename::String)
+
+    linenumber = 0
+    instance = AllocationInstance[]
+    io = open(filename)
+
+    for ln in eachline(io)
+        linenumber = linenumber+1
+        if linenumber == line
+            instance = eval(Meta.parse(ln))
+        end
+    end
+    close(io)
+
+    return instance
 end
 
 function write_result_to_file(filename::String, data::DataFrame)

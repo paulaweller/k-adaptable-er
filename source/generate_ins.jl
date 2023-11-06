@@ -1,8 +1,8 @@
 include("helpers_data.jl")
 
-sn = 4              # number of service nodes
-dn = 8              # number of demand nodes
-i_n = 3              # number of instances
+sn = 2              # number of service nodes
+dn = 4              # number of demand nodes
+i_n = 5              # number of instances
 
 sed = rand(1:500, i_n)   # random seed
 filename = "data/test_batch.txt"

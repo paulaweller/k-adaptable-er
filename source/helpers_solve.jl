@@ -40,12 +40,13 @@ function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0
     end
     if box==true
         println("Starting box-and-cut...")
-        x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box, evol_box = solve_box(k, problem_instance, time_limit = tlim) # TODO time limit?
+        x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box, evol_box, zeta_box = solve_box(k, problem_instance, time_limit = tlim) # TODO time limit?
         results_box = Dict(
             
             :θ_box       => theta_box, 
             :it_box      => it_box, 
             :runtime_box => runtime_box
+            :zeta_box    => zeta_box
         )
         if return_solutions==true
         solutions_box = Dict(

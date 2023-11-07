@@ -33,7 +33,7 @@ function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240
         runtime = (now()-time_start).value/1000
     end
     
-    return x, y, s, xi, theta, iteration, runtime, obj_evolution
+    return x, y, s, xi, theta, iteration, runtime, obj_evolution, zeta
 
 end
 

@@ -4,15 +4,17 @@ include("helpers_solve.jl")
 k = parse(Int64, ARGS[1]) 
 l = parse(Int64, ARGS[2]) #task id
 file = ARGS[3] #data file
-lim = 150.0         # runtime limit in seconds
+lim = 3600.0         # runtime limit in seconds
 
 inst_read = read_one_instance_from_file(l, "data/$(file).txt")
 
 # TODO TEST THIS
-save_x = eval(mod(l, 5) == 0)
+save_x = eval(mod(l, 10) == 0)
 results, solutions = run_instance(k, inst_read, tlim=lim, return_solutions=save_x)
 
-#results, solutions = run_instance(k, inst_read, tlim=lim)
+# add line/instance number to results
+linedict = Dict(:instance => l)
+merge!(results, linedict)
 
 result_data = DataFrame(results)
 write_result_to_file("results/$(file)/results_$(file)_k$(k)_l$(l).csv", result_data)
@@ -23,3 +25,5 @@ if save_x
      CSV.write(output, solutions)
      close(output)
  end
+
+# rm results/$FILE/results_${FILE}_k${K}_l$L.csv

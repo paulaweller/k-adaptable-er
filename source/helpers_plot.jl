@@ -1,4 +1,4 @@
-using LinearAlgebra, Dates, Random, Statistics, JuMP
+using LinearAlgebra, Dates, Random, Statistics, JuMP, Plots,StatsPlots
 #StatsPlots,
 
 """
@@ -187,7 +187,7 @@ function k_curve_multi(mult; n_val=3, m_val=6, d_max=5, p=0.5, number_of_plans=f
     savefig(cell_plot, "results/kcurve_multi_cells.pdf")
 end
 
-function box_plot_from_files(filenames, labelnames)
+function box_plot_from_textfiles(filenames, labelnames)
 
     plot_data_obj = zeros(50,length(filenames))
     plot_data_time = zeros(50, length(filenames))
@@ -224,4 +224,49 @@ function box_plot_from_files(filenames, labelnames)
     boxplot!(time_plot, labelnames, plot_data_time, leg=false, linewidth=2,colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],linecolour= :match,fillalpha = 0.4)
     savefig(obj_plot, "results/boxplot_obj.pdf")
     savefig(time_plot, "results/boxplot_time.pdf")
+end
+
+"""
+    box_plot_from_csv(filename::String, labelname::String; objectives=true, times=true)
+
+    filename without .csv ending
+"""
+function box_plot_from_csv(filename::String, labelname::String; objectives=true, times=true)
+
+    plot_data_obj = zeros(50)
+    plot_data_time = zeros(50)
+
+    # extract objective values from file
+    alldata = DataFrame(CSV.File("$(filename).csv"))
+
+    if objectives == true
+        θ_bb = alldata[!, :θ_bb]
+        θ_box = alldata[!, :θ_box]
+        θ_pb = alldata[!, :θ_pb]
+        obj_plot = plot(xlabel="method", ylabel="objective", title=labelname)
+        boxplot!(obj_plot, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], 
+            leg=false, 
+            linewidth=2,
+            colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],
+            linecolour= :match,
+            fillalpha = 0.4)
+        savefig(obj_plot, "$(filename)_boxplot.pdf")
+    end
+    if times==true
+        runtime_bb = alldata[!, :runtime_bb]
+        runtime_box = alldata[!, :runtime_box]
+        runtime_pb = alldata[!, :runtime_pb]
+        time_plot = plot(xlabel="method", ylabel="runtime")
+        boxplot!(time_plot, ["BB" "Box" "PB"], [runtime_bb runtime_box runtime_pb], 
+            leg=false, 
+            linewidth=2,
+            colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],
+            linecolour= :match,
+            fillalpha = 0.4)
+            savefig(time_plot, "$(filename)_boxplot.pdf")
+    end
+    if objectives == true && times==true
+        combi = plot(obj_plot, time_plot, layout=(1,2), legend=false)
+        savefig(combi, "$(filename)_boxplot.pdf")
+    end
 end

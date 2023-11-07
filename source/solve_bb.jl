@@ -41,7 +41,7 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
             zeta, xi = solve_separation_problem_general(y, s, inst, time_start, time_limit)
             #println("separation problem solved, worst case scenario xi = $(xi)")
 
-            if zeta <= 1e-6 # no violations
+            if zeta <= 1e-3 # no violations
 
                 #$(θ^i, x^i, y^i) ← (θ, x, y)$
                 theta_i = theta

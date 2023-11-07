@@ -14,9 +14,9 @@ export FILE="data_batch_6_20_0.3"
 export K=3  # k 1 2 3
 export L=$SLURM_ARRAY_TASK_ID
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
-mkdir results/$FILE
-mkdir results/$FILE/individual
+mkdir results_new_zeta/$FILE
+mkdir results_new_zeta/$FILE/individual
 
 module load julia
 srun julia --project=. arraymain.jl $K $L $FILE
-awk '(NR == 1) || (FNR > 1)' results/$FILE/individual/results_${FILE}_k${K}_*.csv > results/$FILE/combined_results_${FILE}_k$K.csv
+awk '(NR == 1) || (FNR > 1)' results_new_zeta/$FILE/individual/results_${FILE}_k${K}_*.csv > results_new_zeta/$FILE/combined_results_${FILE}_k$K.csv

@@ -17,11 +17,11 @@ linedict = Dict(:instance => l)
 merge!(results, linedict)
 
 result_data = DataFrame(results)
-write_result_to_file("results/$(file)/results_$(file)_k$(k)_l$(l).csv", result_data)
+write_result_to_file("results/$(file)/individual/results_$(file)_k$(k)_l$(l).csv", result_data)
 
 # TODO TEST THIS
 if save_x
-     output = open("results/$(file)/sol_$(file)_k$(k)_l$(l).txt", "w")
+     output = open("results/$(file)/individual/sol_$(file)_k$(k)_l$(l).txt", "w")
      CSV.write(output, solutions)
      close(output)
  end

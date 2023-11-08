@@ -20,7 +20,7 @@ function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240
     zeta, d = solve_separation_problem_box(separation_modell, time_start, time_limit)
     iteration = 0 # iteration counter
 
-    while zeta > 1e-3 && (runtime <= time_limit)
+    while zeta > 1e-6 && (runtime <= time_limit)
         iteration = iteration + 1
 
         update_scenario_based_box!(scenario_modell, K, ceil.(round.(d, digits = 4)))

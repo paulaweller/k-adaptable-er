@@ -21,6 +21,7 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
     y_i = zeros(Float64,I,J,K)            # second-stage solution
     s_i = zeros(Float64, J,K)           # second-stage slack variables
     best_partition = Vector{Vector{Float64}}[Iterators.repeated(Vector{Float64}[],K)...]
+    obj_evolution = Vector{Float64}[]
     it = 0              # iteration count
     
     while (isempty(N) == false) && (runtime <= time_limit) # stop after 120 s
@@ -48,7 +49,9 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
                 y_i = y
                 s_i = s
                 best_partition = tau
-                #println("incumbent found at time ", (now()-time_start).value/1000)
+                #println("incumbent found at time ", 
+                timenow = (now()-time_start).value/1000
+                push!(obj_evolution, [copy(timenow), copy(theta)])
 
             else
                 Knew = number_of_childnodes(tau)
@@ -66,7 +69,7 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
 
     else
 
-        return x_i, y_i, s_i, best_partition, theta_i, it, runtime
+        return x_i, y_i, s_i, best_partition, theta_i, it, runtime, obj_evolution
 
     end
 end

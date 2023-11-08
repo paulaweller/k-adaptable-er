@@ -26,7 +26,7 @@ function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0
         results_pb = Dict(
             :θ_pb       => theta_pb, 
             :p_true_pb  => p_true_pb, 
-            :runtime_pb => runtime_pb
+            :runtime_pb => runtime_pb,
         )
         if return_solutions==true
             solutions_pb = Dict(
@@ -40,12 +40,12 @@ function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0
     end
     if box==true
         println("Starting box-and-cut...")
-        x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box = solve_box(k, problem_instance, time_limit = tlim) # TODO time limit?
+        x_box, y_box, s_box, xi_box, theta_box, it_box, runtime_box, evol_box, zeta_evol, zeta = solve_box(k, problem_instance, time_limit = tlim) # TODO time limit?
         results_box = Dict(
-            
             :θ_box       => theta_box, 
             :it_box      => it_box, 
-            :runtime_box => runtime_box
+            :runtime_box => runtime_box,
+            :zeta_box    => zeta_box,
         )
         if return_solutions==true
         solutions_box = Dict(
@@ -53,6 +53,8 @@ function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0
             :y_box       => y_box, 
             :s_box       => s_box, 
             :ξ_box       => xi_box, 
+            :evol_box    => evol_box,
+            :evol_zeta   => zeta_evol,
         )
         merge!(solutions, solutions_box)
         end
@@ -61,12 +63,11 @@ function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0
     end
     if bb==true
         println("Starting branch-and-bound...")
-        x_general, y_general, s_general, partition, theta_general, it_general, runtime_general = solve_bb(k, problem_instance, time_limit = tlim) # TODO save partition?
+        x_general, y_general, s_general, partition, theta_general, it_general, runtime_general, evol_general = solve_bb(k, problem_instance, time_limit = tlim) # TODO save partition?
         results_bb = Dict(
-            
             :θ_bb           => theta_general, 
             :it_bb          => it_general, 
-            :runtime_bb     => runtime_general
+            :runtime_bb     => runtime_general,
         )
         merge!(results, results_bb)
         if return_solutions==true
@@ -75,6 +76,7 @@ function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0
                 :y_bb           => y_general, 
                 :s_bb           => s_general, 
                 :partition_bb   => partition,
+                :evol_bb        => evol_general,
             )
             merge!(solutions, solutions_bb)
         end

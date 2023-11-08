@@ -9,28 +9,33 @@ Solve the K-adaptable problem with the Branch-and-Bound approach of Subramanyam 
 function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.0)
     time_start = now()
     runtime = 0.0
+    obj_evolution = Vector{Float64}[]
+    zeta_evolution = Vector{Float64}[]
 
     scenario_modell = build_scenario_based_box(inst, K)
     theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start, time_limit)
+    push!(obj_evolution, [(now()-time_start).value/1000, theta])
 
     separation_modell = build_separation_problem_box(inst, K, xi)
     zeta, d = solve_separation_problem_box(separation_modell, time_start, time_limit)
     iteration = 0 # iteration counter
 
-    while zeta > 1e-6 && (runtime <= time_limit)
+    while zeta > 1e-3 && (runtime <= time_limit)
         iteration = iteration + 1
 
         update_scenario_based_box!(scenario_modell, K, ceil.(round.(d, digits = 4)))
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start, time_limit)
+        push!(obj_evolution, [(now()-time_start).value/1000, copy(theta)])
 
         # find violations
         update_separation_problem_box!(separation_modell, xi)
         zeta, d = solve_separation_problem_box(separation_modell, time_start, time_limit)
+        push!(zeta_evolution, [(now()-time_start).value/1000, copy(zeta)])
         runtime = (now()-time_start).value/1000
     end
     
-    return x, y, s, xi, theta, iteration, runtime
+    return x, y, s, xi, theta, iteration, runtime, obj_evolution, zeta_evolution, zeta
 
 end
 

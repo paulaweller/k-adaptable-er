@@ -10,6 +10,7 @@ function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240
     time_start = now()
     runtime = 0.0
     obj_evolution = Vector{Float64}[]
+    zeta_evolution = Vector{Float64}[]
 
     scenario_modell = build_scenario_based_box(inst, K)
     theta, x, y, s, xi = solve_scenario_based_box(scenario_modell, time_start, time_limit)
@@ -30,10 +31,11 @@ function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240
         # find violations
         update_separation_problem_box!(separation_modell, xi)
         zeta, d = solve_separation_problem_box(separation_modell, time_start, time_limit)
+        push!(zeta_evolution, [(now()-time_start).value/1000, copy(zeta)])
         runtime = (now()-time_start).value/1000
     end
     
-    return x, y, s, xi, theta, iteration, runtime, obj_evolution, zeta
+    return x, y, s, xi, theta, iteration, runtime, obj_evolution, zeta_evolution, zeta
 
 end
 

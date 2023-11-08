@@ -25,5 +25,3 @@ if save_x
      CSV.write(output, solutions)
      close(output)
  end
-
-# rm results/$FILE/results_${FILE}_k${K}_l$L.csv

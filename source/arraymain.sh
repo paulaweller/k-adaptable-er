@@ -4,8 +4,7 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --output=output/array_%A_%a.out
 #SBATCH --array=1-50
-
-export FILE="data_batch_6_10_0.1"
+export FILE="data_batch_6_20_0.3"
 # "data_batch_8_10_0.1" # "data_batch_8_10_0.3"
 # "data_batch_8_15_0.1" # "data_batch_8_15_0.3"
 # "data_batch_8_20_0.1" # "data_batch_8_20_0.3"

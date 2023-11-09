@@ -24,4 +24,4 @@ if save_x
      output = open("results/$(file)/individual/sol_$(file)_k$(k)_l$(l).txt", "w")
      CSV.write(output, solutions)
      close(output)
- en
+end

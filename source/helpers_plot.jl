@@ -226,6 +226,14 @@ function box_plot_from_textfiles(filenames, labelnames)
     savefig(time_plot, "results/boxplot_time.pdf")
 end
 
+function filter_floats!(df)
+    filter!(x -> x isa Float64, df)
+end
+
+function filter_time!(df)
+    filter!(x-> x < 3600, df)
+end
+
 """
     box_plot_from_csv(filename::String, labelname::String; objectives=true, times=true)
 
@@ -240,9 +248,13 @@ function box_plot_from_csv(filename::String, labelname::String; objectives=true,
     alldata = DataFrame(CSV.File("$(filename).csv"))
 
     if objectives == true
-        θ_bb = alldata[!, :θ_bb]
-        θ_box = alldata[!, :θ_box]
-        θ_pb = alldata[!, :θ_pb]
+        θ_bb = alldata[:, :θ_bb]
+        filter_floats!(θ_bb)
+        if length(θ_bb) != 50
+            θ_bb = zeros(50)
+        end
+        θ_box = alldata[:, :θ_box]
+        θ_pb = alldata[:, :θ_pb]
         obj_plot = plot(xlabel="method", ylabel="objective", title=labelname)
         boxplot!(obj_plot, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], 
             leg=false, 
@@ -253,11 +265,16 @@ function box_plot_from_csv(filename::String, labelname::String; objectives=true,
         savefig(obj_plot, "$(filename)_boxplot.pdf")
     end
     if times==true
-        runtime_bb = alldata[!, :runtime_bb]
-        runtime_box = alldata[!, :runtime_box]
-        runtime_pb = alldata[!, :runtime_pb]
+        runtime_bb = alldata[:, :runtime_bb]
+        filter_floats!(runtime_bb)
+        if length(runtime_bb) != 50
+            runtime_bb = zeros(50)
+        end
+        runtime_box = alldata[:, :runtime_box]
+        box_optimal = length(filter(x->x<3600, alldata[:, :runtime_box]))
+        runtime_pb = alldata[:, :runtime_pb]
         time_plot = plot(xlabel="method", ylabel="runtime")
-        boxplot!(time_plot, ["BB" "Box" "PB"], [runtime_bb runtime_box runtime_pb], 
+        boxplot!(time_plot, ["BB" "Box($(box_optimal))" "PB"], [runtime_bb runtime_box runtime_pb], 
             leg=false, 
             linewidth=2,
             colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],

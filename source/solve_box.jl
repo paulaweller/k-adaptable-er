@@ -35,7 +35,7 @@ function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240
         runtime = (now()-time_start).value/1000
     end
     
-    return x, y, s, xi, theta, iteration, runtime, obj_evolution, zeta_evolution, zeta
+    return x, y, s, xi, theta, iteration, runtime, obj_evolution, zeta_evolution, zeta_evolution[end-1][2] # last zeta will be zero if gurobi didn't finish solving the problem, so give second-to-last
 
 end
 

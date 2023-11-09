@@ -16,7 +16,7 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
     N = Vector{Vector{Vector{Float64}}}[]
     push!(N, Vector{Vector{Float64}}[Iterators.repeated(Vector{Float64}[],K)...])
     # the incumbent
-    theta_i = 1e10     # objective value
+    theta_i = 1e20     # objective value
     x_i = Float64[]            # first-stage solution
     y_i = zeros(Float64,I,J,K)            # second-stage solution
     s_i = zeros(Float64, J,K)           # second-stage slack variables
@@ -63,7 +63,7 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
         runtime = (now()-time_start).value/1000
     end
     
-    if theta_i == 1e10
+    if theta_i == 1e20
 
         return "infeasible"
 

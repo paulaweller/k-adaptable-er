@@ -3,7 +3,7 @@
 #SBATCH --mem=2G
 #SBATCH --cpus-per-task=8
 #SBATCH --output=output/array_%A_%a.out
-#SBATCH --array=26,46
+#SBATCH --array=1-50
 #SBATCH --exclude=milan14
 
 # export FILE="data_batch_4_10_0.1" 
@@ -18,7 +18,7 @@
 #  export FILE="data_batch_6_15_0.1" 
 # export FILE="data_batch_6_15_0.3"
 # export FILE="data_batch_6_20_0.1" 
-export FILE="data_batch_6_20_0.3"
+# export FILE="data_batch_6_20_0.3"
 # n = 8
 # export FILE="data_batch_8_10_0.1" 
 # export FILE="data_batch_8_10_0.3"
@@ -27,7 +27,7 @@ export FILE="data_batch_6_20_0.3"
 # export FILE="data_batch_8_20_0.1" 
 # export FILE="data_batch_8_20_0.3"
 # k
-export K=2
+export K=3
 export L=$SLURM_ARRAY_TASK_ID
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
 mkdir results/$FILE

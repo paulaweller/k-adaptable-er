@@ -15,7 +15,7 @@
 # n = 6
 # export FILE="data_batch_6_10_0.1" 
 # export FILE="data_batch_6_10_0.3"
-#  export FILE="data_batch_6_15_0.1" 
+# export FILE="data_batch_6_15_0.1" 
 # export FILE="data_batch_6_15_0.3"
 # export FILE="data_batch_6_20_0.1" 
 # export FILE="data_batch_6_20_0.3"

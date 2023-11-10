@@ -4,13 +4,31 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --output=output/array_%A_%a.out
 #SBATCH --array=1-50
-export FILE="data_batch_6_20_0.1"
-# "data_batch_8_10_0.1" # "data_batch_8_10_0.3"
-# "data_batch_8_15_0.1" # "data_batch_8_15_0.3"
-# "data_batch_8_20_0.1" # "data_batch_8_20_0.3"
-# 4_20 check which k, pc
-# 6_10 check which k ,pc
-export K=3  # k 1 2 3
+
+# export FILE="data_batch_4_10_0.1" 
+# export FILE="data_batch_4_10_0.3"
+# export FILE="data_batch_4_15_0.1" 
+# export FILE="data_batch_4_15_0.3"
+# export FILE="data_batch_4_20_0.1" 
+# export FILE="data_batch_4_20_0.3"
+# n = 6
+# export FILE="data_batch_6_10_0.1" 
+# export FILE="data_batch_6_10_0.3"
+# export FILE="data_batch_6_15_0.1" 
+# export FILE="data_batch_6_15_0.3"
+# export FILE="data_batch_6_20_0.1" 
+# export FILE="data_batch_6_20_0.3"
+# n = 8
+# export FILE="data_batch_8_10_0.1" 
+# export FILE="data_batch_8_10_0.3"
+# export FILE="data_batch_8_15_0.1" 
+# export FILE="data_batch_8_15_0.3"
+# export FILE="data_batch_8_20_0.1" 
+# export FILE="data_batch_8_20_0.3"
+# k 
+# export K=1
+export K=2
+# export K=3
 export L=$SLURM_ARRAY_TASK_ID
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
 mkdir results/$FILE

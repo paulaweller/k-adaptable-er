@@ -34,8 +34,14 @@ function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240
         push!(zeta_evolution, [(now()-time_start).value/1000, copy(zeta)])
         runtime = (now()-time_start).value/1000
     end
-    
-    return x, y, s, xi, theta, iteration, runtime, obj_evolution, zeta_evolution, zeta_evolution[end-1][2] # last zeta will be zero if gurobi didn't finish solving the problem, so give second-to-last
+    if length(zeta_evolution) > 1
+        zeta_last = zeta_evolution[end-1][2]
+    elseif length(zeta_evolution) == 1 && (zeta_evolution[end][2] > 1e-6)
+        zeta_last = zeta_evolution[end][2]
+    else 
+        zeta_last = zeta
+    end
+    return x, y, s, xi, theta, iteration, runtime, obj_evolution, zeta_evolution, zeta_last # last zeta will be zero if gurobi didn't finish solving the problem, so give second-to-last
 
 end
 

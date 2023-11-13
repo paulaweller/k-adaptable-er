@@ -5,8 +5,7 @@
 # export FILE="data_batch_4_10_0.1" 
 # export FILE="data_batch_4_10_0.3"
 # export FILE="data_batch_4_15_0.1" 
-# 
-export FILE="data_batch_4_15_0.3"
+# export FILE="data_batch_4_15_0.3"
 # export FILE="data_batch_4_20_0.1" 
 # export FILE="data_batch_4_20_0.3"
 # n = 6
@@ -22,7 +21,8 @@ export FILE="data_batch_4_15_0.3"
 # export FILE="data_batch_8_15_0.1" 
 # export FILE="data_batch_8_15_0.3"
 # export FILE="data_batch_8_20_0.1" 
-# export FILE="data_batch_8_20_0.3"
+# 
+export FILE="data_batch_8_20_0.3"
 # k
-export K=1
+export K=2
 awk '(NR == 1) || (FNR > 1)' results/$FILE/individual/results_${FILE}_k${K}_*.csv > results/$FILE/combined_results_${FILE}_k$K.csv

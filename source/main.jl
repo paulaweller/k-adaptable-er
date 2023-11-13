@@ -18,14 +18,26 @@ include("helpers_plot.jl")
 
 # write_result_to_file("source/results/resulttest.csv", result_data)
 # print(solutions1)
-no = [4, 6]
-mo = [10, 15, 20]
+
+
+no = [4,6]
+mo = [10,15,20]
 pco = [0.1, 0.3]
-k = 1
+k = [1,2,3]
 for n in no
     for m in mo
         for pc in pco
-            box_plot_from_csv("source/results/data_batch_$(n)_$(m)_$(pc)/combined_results_data_batch_$(n)_$(m)_$(pc)_k$(k)", "data batch $(n)_$(m)_$(pc), k=$k")
+            # box_plot_from_csv("source/results/data_batch_$(n)_$(m)_$(pc)/combined_results_data_batch_$(n)_$(m)_$(pc)_k$(k)", "data batch $(n)_$(m)_$(pc), k=$k", times=false)
+            filename = "results/all_batches/combined_results_data_batch_$(n)_$(m)_$(pc)_k$(k)"
+            data = DataFrame(CSV.File("$(filename).csv"))
+            data[!, :n] .= n
+            data[!, :m] .= m
+            data[!, :pc] .= pc
+            data[!, :k] .= k
+            output = open("$(filename).csv", "w")
+            CSV.write(output, data)
+            close(output)
         end
     end
 end
+

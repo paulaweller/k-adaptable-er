@@ -227,11 +227,25 @@ function box_plot_from_textfiles(filenames, labelnames)
 end
 
 function filter_floats!(df)
-    filter!(x -> x isa Float64, df)
+    dd = filter(x -> x isa Float64, df)
+    return dd
 end
 
-function filter_time!(df)
-    filter!(x-> x < 3600, df)
+function split_time(df, alg)
+    term = DataFrame()
+    unterm = DataFrame()
+    if alg=="bb"
+        df_clean = df[df[!,:it_bb] .!= "s" , :]
+        df_clean[!,:runtime_bb] = parse.(Float64, df_clean[!,:runtime_bb])
+        df_clean[!,:θ_bb] = parse.(Float64, df_clean[!,:θ_bb])
+        term = df_clean[df_clean[!,:runtime_bb] .<= 3600 , :]
+        unterm = df_clean[df_clean[!,:runtime_bb] .> 3600 , :]
+    end
+    if alg=="box"
+        term = df[df[!,:runtime_box] .<= 3600 , :]
+        unterm = df[df[!,:runtime_box] .> 3600 , :]
+    end
+    return term, unterm
 end
 
 """
@@ -246,22 +260,40 @@ function box_plot_from_csv(filename::String, labelname::String; objectives=true,
 
     # extract objective values from file
     alldata = DataFrame(CSV.File("$(filename).csv"))
+    bb_term, bb_unterm = split_time(alldata, "bb")
+    box_term, box_unterm = split_time(alldata, "box")
 
     if objectives == true
-        θ_bb = alldata[:, :θ_bb]
-        filter_floats!(θ_bb)
-        if length(θ_bb) != 50
-            θ_bb = zeros(50)
+        obj_plot = plot(ylabel="objective", title=labelname)
+        (nrow(bb_term) > 0) ? (θ_bb_term = bb_term[:, :θ_bb]) : (θ_bb_term = [])
+        (nrow(bb_unterm) > 0) ? (θ_bb_unterm = bb_unterm[:, :θ_bb]) : (θ_bb_unterm = [])
+        θ_bb_feas = vcat(θ_bb_term, θ_bb_unterm)
+        no_bb_feas = length(θ_bb_feas)
+        boxplot!(obj_plot, ["BB ($(no_bb_feas))"], [θ_bb_feas], 
+        leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+
+        θ_box_term = box_term[:, :θ_box]
+        if length(θ_box_term) > 0
+            boxplot!(obj_plot, ["Box opt ($(length(θ_box_term)))"], [θ_box_term], 
+            leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
         end
-        θ_box = alldata[:, :θ_box]
+        θ_box_unterm = box_unterm[:, :θ_box]
+        n = length(θ_box_unterm)
+        if n > 0
+            boxplot!(obj_plot, ["Box lb ($n)"], [θ_box_unterm], 
+            leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+        end
+
         θ_pb = alldata[:, :θ_pb]
-        obj_plot = plot(xlabel="method", ylabel="objective", title=labelname)
-        boxplot!(obj_plot, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], 
-            leg=false, 
-            linewidth=2,
-            colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],
-            linecolour= :match,
-            fillalpha = 0.4)
+        boxplot!(obj_plot, ["PB"], [θ_pb], 
+        leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+
+        # boxplot!(obj_plot, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], 
+        #     leg=false, 
+        #     linewidth=2,
+        #     colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],
+        #     linecolour= :match,
+        #     fillalpha = 0.4)
         savefig(obj_plot, "$(filename)_boxplot.pdf")
     end
     if times==true

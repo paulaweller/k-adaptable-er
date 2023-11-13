@@ -20,15 +20,16 @@ include("helpers_plot.jl")
 # print(solutions1)
 
 
-no = [4,6]
+no = [8]
 mo = [10,15,20]
 pco = [0.1, 0.3]
-k = [1,2,3]
+ko = [1,2,3]
+for k in ko
 for n in no
     for m in mo
         for pc in pco
             # box_plot_from_csv("source/results/data_batch_$(n)_$(m)_$(pc)/combined_results_data_batch_$(n)_$(m)_$(pc)_k$(k)", "data batch $(n)_$(m)_$(pc), k=$k", times=false)
-            filename = "results/all_batches/combined_results_data_batch_$(n)_$(m)_$(pc)_k$(k)"
+            filename = "source/results/all_batches/combined_results_data_batch_$(n)_$(m)_$(pc)_k$(k)"
             data = DataFrame(CSV.File("$(filename).csv"))
             data[!, :n] .= n
             data[!, :m] .= m
@@ -39,5 +40,6 @@ for n in no
             close(output)
         end
     end
+end
 end
 

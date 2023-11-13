@@ -24,4 +24,4 @@
 # export FILE="data_batch_8_20_0.3"
 # k
 export K=2
-awk '(NR == 1) || (FNR > 1)' results/all_batches/*.csv > results/all_batches/combined_results_all_k$K.csv
+awk '(NR == 1) || (FNR > 1)' results/all_batches/*.csv > results/all_batches/combined_results_all_batches.csv

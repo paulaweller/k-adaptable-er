@@ -246,15 +246,15 @@ function split_time(df, alg)
 end
 
 """
-    box_plot_from_csv(filename::String, labelname::String; objectives=true, times=true)
+    termination_plot_from_csv(filename::String; terminated="both")
 
-    filename without .csv ending
+    filename without .csv ending, terminated is one from both, bb, box, neither, bb_infeas
 """
-function box_plot_from_csv(filename::String; terminated="both")
+function termination_plot_from_csv(filename::String; terminated="both", k=2)
 
     # extract data from file, remove lines with strings where bb is infeas
     alldata_dirty_allk = DataFrame(CSV.File("$(filename).csv"))
-    alldata_dirty = alldata_dirty_allk[alldata_dirty_allk[!,:k] .!= 1,:]
+    alldata_dirty = alldata_dirty_allk[alldata_dirty_allk[!,:k] .== k,:]
     alldata = alldata_dirty[alldata_dirty[!,:it_bb] .!= "s",:]
     alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
     alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
@@ -291,51 +291,148 @@ function box_plot_from_csv(filename::String; terminated="both")
     end
 
     if terminated == "bb_infeas"
-        obj_plot = plot(ylabel="objective", title="BB infeasible)")
+        obj_plot = plot(ylabel="objective", title="BB infeasible")
         θ_box_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :θ_box]
         θ_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :θ_box]
         θ_pb_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :θ_pb]
         θ_pb_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :θ_pb]
-        boxplot!(obj_plot, ["Box t. ($(length(θ_box_term)))" "PB"], [θ_box_term θ_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-        boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))" "PB"], [θ_box_unterm θ_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-        savefig(obj_plot, "source/plots/bb_infeasible_obj.pdf")
+        if length(θ_box_term) > 0
+            boxplot!(obj_plot, ["Box t. $(length(θ_box_term))"], [θ_box_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            boxplot!(obj_plot, ["PB"], [θ_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+        end
+        if length(θ_box_unterm) > 0
+            boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))"], [θ_box_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            boxplot!(obj_plot, ["PB"], [θ_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+        end
+        savefig(obj_plot, "source/plots/termination/k$(k)_bb_infeasible_obj.pdf")
 
         time_box_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :runtime_box]
         time_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :runtime_box]
         time_pb_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :runtime_pb]
         time_pb_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :runtime_pb]
         time_plot = plot(ylabel="runtime", title="BB infeasible")
-        boxplot!(time_plot, ["Box t." "PB"], [time_box_term time_pb_term], 
-            leg=false, 
-            linewidth=2,
-            linecolour= :match,
-            fillalpha = 0.4)
-        boxplot!(time_plot, ["Box unt." "PB"], [time_box_unterm time_pb_unterm], 
-            leg=false, 
-            linewidth=2,
-            linecolour= :match,
-            fillalpha = 0.4)
-        savefig(time_plot, "source/plots/bb_infeasible_time.pdf")
+        if length(time_box_term) > 0
+            boxplot!(time_plot, ["Box t." "PB"], [time_box_term time_pb_term], 
+                leg=false, 
+                linewidth=2,
+                linecolour= :match,
+                fillalpha = 0.4)
+        end
+        if length(time_box_unterm) > 0
+            boxplot!(time_plot, ["Box unt." "PB"], [time_box_unterm time_pb_unterm], 
+                leg=false, 
+                linewidth=2,
+                linecolour= :match,
+                fillalpha = 0.4)
+        end
+        savefig(time_plot, "source/plots/termination/k$(k)_bb_infeasible_time.pdf")
     else
         obj_plot_bb_box = plot(ylabel="objective", title="$(nrow(plot_data)) instances")
         θ_bb = plot_data[:, :θ_bb]
         θ_box = plot_data[:, :θ_box]
         θ_pb = plot_data[:, :θ_pb]
-        boxplot!(obj_plot_bb_box, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-
-        savefig(obj_plot_bb_box, "source/plots/$(terminated)_terminate_obj.pdf")
+        if nrow(plot_data) > 0
+            boxplot!(obj_plot_bb_box, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            savefig(obj_plot_bb_box, "source/plots/termination/k$(k)_$(terminated)_terminate_obj.pdf")
+        end
 
         time_bb = plot_data[:, :runtime_bb]
         time_box = plot_data[:, :runtime_box]
         time_pb = plot_data[:, :runtime_pb]
         time_plot = plot(ylabel="runtime", title="$(nrow(plot_data)) instances")
-        boxplot!(time_plot, ["BB" "Box" "PB"], [time_bb time_box time_pb], 
-            leg=false, 
-            linewidth=2,
-            linecolour= :match,
-            fillalpha = 0.4)
-            savefig(time_plot, "source/plots/$(terminated)_terminate_time.pdf")
+        if nrow(plot_data) > 0
+            boxplot!(time_plot, ["BB" "Box" "PB"], [time_bb time_box time_pb], 
+                leg=false, 
+                linewidth=2,
+                linecolour= :match,
+                fillalpha = 0.4)
+            savefig(time_plot, "source/plots/termination/k$(k)_$(terminated)_terminate_time.pdf")
+        end
     end
+    # combi = plot(obj_plot_bb_box, time_plot, layout=(1,2), legend=false)
+    # savefig(combi, "$(filename)_boxplot.pdf")
+
+end
+
+"""
+    k_plot_from_csv(filename::String; method="box")
+
+    filename without .csv ending
+"""
+function k_plot_from_csv(filename::String; method="box", relative=false)
+
+    # extract data from file, remove lines with strings where bb is infeas
+    alldata_dirty = DataFrame(CSV.File("$(filename).csv"))
+    if method == "bb"
+        # filter feasible ones
+        alldata = alldata_dirty[alldata_dirty[!,:it_bb] .!= "s",:]
+        alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
+        alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
+        term, unterm = split_time(alldata, "bb")
+        θ_key = :θ_bb
+        time_key = :runtime_bb
+    elseif method == "box"
+        alldata = alldata_dirty
+        term, unterm = split_time(alldata, "box")
+        θ_key = :θ_box
+        time_key = :runtime_box
+    elseif method == "pb"
+        term = alldata_dirty
+        θ_key = :θ_pb
+        time_key = :runtime_pb
+    else
+        error("method is invalid, must be one of bb, box, pb")
+    end
+    # sort by k
+    term_k1 = term[term[!,:k] .== 1,:]
+    term_k2 = term[term[!,:k] .== 2,:]
+    term_k3 = term[term[!,:k] .== 3,:]
+
+    term_is1 = semijoin(term_k1, term_k2, on = [:instance, :n, :m, :pc])
+    term_is1 = semijoin(term_k1, term_k3, on = [:instance, :n, :m, :pc])
+    sort!(term_is1, [:n, :m, :pc, :instance])
+
+    term_is2 = semijoin(term_k2, term_k1, on = [:instance, :n, :m, :pc])
+    term_is2 = semijoin(term_k2, term_k3, on = [:instance, :n, :m, :pc])
+    sort!(term_is2, [:n, :m, :pc, :instance])
+
+    term_is3 = semijoin(term_k3, term_k1, on = [:instance, :n, :m, :pc])
+    term_is3 = semijoin(term_k3, term_k2, on = [:instance, :n, :m, :pc])
+    sort!(term_is3, [:n, :m, :pc, :instance])
+
+    if relative == true 
+        obj_plot = plot(ylabel="relative improvement of objective")
+        θ1 = 100 .*(1 .- term_is1[:, θ_key]./term_is1[:, θ_key])
+        θ2 = 100 .*(1 .- term_is2[:, θ_key]./term_is1[:, θ_key])
+        θ3 = 100 .*(1 .- term_is3[:, θ_key]./term_is1[:, θ_key])
+    elseif relative == false
+        obj_plot = plot(ylabel="objective")
+        θ1 = term_is1[:, θ_key]
+        θ2 = term_is2[:, θ_key]
+        θ3 = term_is3[:, θ_key]
+    else 
+        error("value for relative is invalid")
+    end
+
+
+    boxplot!(obj_plot, ["k=1" "k=2" "k=3"], [θ1 θ2 θ3], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+    if relative == true 
+        savefig(obj_plot, "source/plots/k_comparison/k3_$(method)_relobj.pdf")
+    else 
+        savefig(obj_plot, "source/plots/k_comparison/k3_$(method)_obj.pdf")
+    end
+
+    t1 = term_is1[:, time_key]
+    t2 = term_is2[:, time_key]
+    t3 = term_is3[:, time_key]
+    time_plot = plot(ylabel="runtime")
+    boxplot!(time_plot, ["k=1" "k=2" "k=3"], [t1 t2 t3], 
+        leg=false, 
+        linewidth=2,
+        linecolour= :match,
+        fillalpha = 0.4)
+
+    savefig(time_plot, "source/plots/k_comparison/k3_$(method)_time.pdf")
     # combi = plot(obj_plot_bb_box, time_plot, layout=(1,2), legend=false)
     # savefig(combi, "$(filename)_boxplot.pdf")
 

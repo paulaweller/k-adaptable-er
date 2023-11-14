@@ -235,11 +235,8 @@ function split_time(df, alg)
     term = DataFrame()
     unterm = DataFrame()
     if alg=="bb"
-        df_clean = df[df[!,:it_bb] .!= "s" , :]
-        df_clean[!,:runtime_bb] = parse.(Float64, df_clean[!,:runtime_bb])
-        df_clean[!,:θ_bb] = parse.(Float64, df_clean[!,:θ_bb])
-        term = df_clean[df_clean[!,:runtime_bb] .<= 3600 , :]
-        unterm = df_clean[df_clean[!,:runtime_bb] .> 3600 , :]
+        term = df[df[!,:runtime_bb] .<= 3600 , :]
+        unterm = df[df[!,:runtime_bb] .> 3600 , :]
     end
     if alg=="box"
         term = df[df[!,:runtime_box] .<= 3600 , :]
@@ -253,69 +250,93 @@ end
 
     filename without .csv ending
 """
-function box_plot_from_csv(filename::String, labelname::String; objectives=true, times=true)
+function box_plot_from_csv(filename::String; terminated="both")
 
-    plot_data_obj = zeros(50)
-    plot_data_time = zeros(50)
-
-    # extract objective values from file
-    alldata = DataFrame(CSV.File("$(filename).csv"))
+    # extract data from file, remove lines with strings where bb is infeas
+    alldata_dirty_allk = DataFrame(CSV.File("$(filename).csv"))
+    alldata_dirty = alldata_dirty_allk[alldata_dirty_allk[!,:k] .!= 1,:]
+    alldata = alldata_dirty[alldata_dirty[!,:it_bb] .!= "s",:]
+    alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
+    alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
+    # instances where bb/box terminated/ didn't terminate
     bb_term, bb_unterm = split_time(alldata, "bb")
     box_term, box_unterm = split_time(alldata, "box")
 
-    if objectives == true
-        obj_plot = plot(ylabel="objective", title=labelname)
-        (nrow(bb_term) > 0) ? (θ_bb_term = bb_term[:, :θ_bb]) : (θ_bb_term = [])
-        (nrow(bb_unterm) > 0) ? (θ_bb_unterm = bb_unterm[:, :θ_bb]) : (θ_bb_unterm = [])
-        θ_bb_feas = vcat(θ_bb_term, θ_bb_unterm)
-        no_bb_feas = length(θ_bb_feas)
-        boxplot!(obj_plot, ["BB ($(no_bb_feas))"], [θ_bb_feas], 
-        leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+    # instances where bb was infeasible
+    bb_infeas = alldata_dirty[alldata_dirty[!,:it_bb] .== "s",:]
 
-        θ_box_term = box_term[:, :θ_box]
-        if length(θ_box_term) > 0
-            boxplot!(obj_plot, ["Box opt ($(length(θ_box_term)))"], [θ_box_term], 
-            leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-        end
-        θ_box_unterm = box_unterm[:, :θ_box]
-        n = length(θ_box_unterm)
-        if n > 0
-            boxplot!(obj_plot, ["Box lb ($n)"], [θ_box_unterm], 
-            leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-        end
+    # all combinations of termination
+    both_term = semijoin(bb_term, box_term, on = [:instance, :n, :m, :pc, :k])
+    only_bb_term = bb_term[bb_term[!,:runtime_box] .> 3600 , :]
+    only_box_term = box_term[box_term[!,:runtime_bb] .> 3600, :]
+    neither_term = bb_unterm[bb_unterm[!,:runtime_box] .> 3600, :]
 
-        θ_pb = alldata[:, :θ_pb]
-        boxplot!(obj_plot, ["PB"], [θ_pb], 
-        leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-
-        # boxplot!(obj_plot, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], 
-        #     leg=false, 
-        #     linewidth=2,
-        #     colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],
-        #     linecolour= :match,
-        #     fillalpha = 0.4)
-        savefig(obj_plot, "$(filename)_boxplot.pdf")
+        # check that no instance is missing
+    if nrow(bb_infeas) + nrow(both_term) + nrow(only_bb_term) + nrow(only_box_term) + nrow(neither_term) != nrow(alldata_dirty)
+        error("Missing instances: Some were not infeasible, terminated or unterminated.")
     end
-    if times==true
-        runtime_bb = alldata[:, :runtime_bb]
-        filter_floats!(runtime_bb)
-        if length(runtime_bb) != 50
-            runtime_bb = zeros(50)
-        end
-        runtime_box = alldata[:, :runtime_box]
-        box_optimal = length(filter(x->x<3600, alldata[:, :runtime_box]))
-        runtime_pb = alldata[:, :runtime_pb]
-        time_plot = plot(xlabel="method", ylabel="runtime")
-        boxplot!(time_plot, ["BB" "Box($(box_optimal))" "PB"], [runtime_bb runtime_box runtime_pb], 
+
+    if terminated == "both"
+        plot_data = both_term
+    elseif terminated == "bb"
+        plot_data = only_bb_term
+    elseif terminated == "box"
+        plot_data = only_box_term
+    elseif terminated == "neither"
+        plot_data = neither_term
+    elseif terminated == "bb_infeas"
+        plot_data = bb_infeas
+    else 
+        error("Option terminated is not valid. Enter terminated= one of both,bb,box,neither,bb_infeas.")
+    end
+
+    if terminated == "bb_infeas"
+        obj_plot = plot(ylabel="objective", title="BB infeasible)")
+        θ_box_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :θ_box]
+        θ_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :θ_box]
+        θ_pb_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :θ_pb]
+        θ_pb_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :θ_pb]
+        boxplot!(obj_plot, ["Box t. ($(length(θ_box_term)))" "PB"], [θ_box_term θ_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+        boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))" "PB"], [θ_box_unterm θ_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+        savefig(obj_plot, "source/plots/bb_infeasible_obj.pdf")
+
+        time_box_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :runtime_box]
+        time_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :runtime_box]
+        time_pb_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :runtime_pb]
+        time_pb_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :runtime_pb]
+        time_plot = plot(ylabel="runtime", title="BB infeasible")
+        boxplot!(time_plot, ["Box t." "PB"], [time_box_term time_pb_term], 
             leg=false, 
             linewidth=2,
-            colour = [RGB(122/255, 200/255, 255/255) RGB(0/255, 71/255, 119/255) RGB(207/255, 159/255, 205/255) RGB(210/255, 22/255, 53/255)],
             linecolour= :match,
             fillalpha = 0.4)
-            savefig(time_plot, "$(filename)_boxplot.pdf")
+        boxplot!(time_plot, ["Box unt." "PB"], [time_box_unterm time_pb_unterm], 
+            leg=false, 
+            linewidth=2,
+            linecolour= :match,
+            fillalpha = 0.4)
+        savefig(time_plot, "source/plots/bb_infeasible_time.pdf")
+    else
+        obj_plot_bb_box = plot(ylabel="objective", title="$(nrow(plot_data)) instances")
+        θ_bb = plot_data[:, :θ_bb]
+        θ_box = plot_data[:, :θ_box]
+        θ_pb = plot_data[:, :θ_pb]
+        boxplot!(obj_plot_bb_box, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+
+        savefig(obj_plot_bb_box, "source/plots/$(terminated)_terminate_obj.pdf")
+
+        time_bb = plot_data[:, :runtime_bb]
+        time_box = plot_data[:, :runtime_box]
+        time_pb = plot_data[:, :runtime_pb]
+        time_plot = plot(ylabel="runtime", title="$(nrow(plot_data)) instances")
+        boxplot!(time_plot, ["BB" "Box" "PB"], [time_bb time_box time_pb], 
+            leg=false, 
+            linewidth=2,
+            linecolour= :match,
+            fillalpha = 0.4)
+            savefig(time_plot, "source/plots/$(terminated)_terminate_time.pdf")
     end
-    if objectives == true && times==true
-        combi = plot(obj_plot, time_plot, layout=(1,2), legend=false)
-        savefig(combi, "$(filename)_boxplot.pdf")
-    end
+    # combi = plot(obj_plot_bb_box, time_plot, layout=(1,2), legend=false)
+    # savefig(combi, "$(filename)_boxplot.pdf")
+
 end

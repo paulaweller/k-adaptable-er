@@ -437,3 +437,59 @@ function k_plot_from_csv(filename::String; method="box", relative=false)
     # savefig(combi, "$(filename)_boxplot.pdf")
 
 end
+
+function plot_pc_vs_time(filename; time=false, objective=false)
+    alldata = DataFrame(CSV.File("$(filename).csv"))
+
+    replace!(alldata.runtime_bb, "i" => "3600.0")
+    alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
+    
+    data1 = alldata[alldata[!,:pc] .== 0.1,:]
+    data3 = alldata[alldata[!,:pc] .== 0.3,:]
+
+    if time == true
+        time_plot1 = plot(xlabel="pc = 0.1")
+        boxplot!(time_plot1, ["bb" "box" "pb"], [data1[!,:runtime_bb] data1[!,:runtime_box] data1[!,:runtime_pb]], 
+            leg=false, 
+            linewidth=2,
+            linecolour= :match,
+            fillalpha = 0.4)
+
+            time_plot3 = plot(xlabel="pc = 0.3")
+            boxplot!(time_plot3, ["bb" "box" "pb"], [data3[!,:runtime_bb] data3[!,:runtime_box] data3[!,:runtime_pb]], 
+                leg=false, 
+                linewidth=2,
+                linecolour= :match,
+                fillalpha = 0.4)
+
+        cplot = plot(time_plot1, time_plot3, ylabel="runtime")
+        savefig(cplot, "source/plots/percentage/time.pdf")
+    end
+    if objective == true
+        alldata_clean = alldata[alldata[!,:it_bb] .!= "s",:]
+        alldata_clean[!,:θ_bb] = parse.(Float64, alldata_clean[!,:θ_bb])
+
+        data1 = alldata_clean[alldata_clean[!,:pc] .== 0.1,:]
+        data3 = alldata_clean[alldata_clean[!,:pc] .== 0.3,:]
+
+        data1 = semijoin(data1, data3, on = [:instance, :n, :m])
+        data3 = semijoin(data3, data1, on = [:instance, :n, :m])
+
+        time_plot1 = plot(xlabel="pc = 0.1")
+        boxplot!(time_plot1, ["bb" "box" "pb"], [data1[!,:θ_bb] data1[!,:θ_box] data1[!,:θ_pb]], 
+            leg=false, 
+            linewidth=2,
+            linecolour= :match,
+            fillalpha = 0.4)
+
+            time_plot3 = plot(xlabel="pc = 0.3")
+            boxplot!(time_plot3, ["bb" "box" "pb"], [data3[!,:θ_bb] data3[!,:θ_box] data3[!,:θ_pb]], 
+                leg=false, 
+                linewidth=2,
+                linecolour= :match,
+                fillalpha = 0.4)
+
+        cplot = plot(time_plot1, time_plot3, ylabel="objective")
+        savefig(cplot, "source/plots/percentage/objective.pdf")
+    end
+end

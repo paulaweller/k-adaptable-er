@@ -197,3 +197,14 @@ function append_to_result_file(filename::String, data::DataFrame)
     CSV.write(output, data, append=true)
     close(output)
 end
+
+function read_solutions_from_file(filepath)
+    # Read the CSV file into a DataFrame
+    df = CSV.read(filepath, DataFrame)
+
+    # Convert the DataFrame to a dictionary
+    solutions_read = Dict(zip(df[!, 1], df[!, 2]))
+
+    # Display the extracted dictionary
+    return solutions_read
+end

@@ -208,3 +208,57 @@ function read_solutions_from_file(filepath)
     # Display the extracted dictionary
     return solutions_read
 end
+
+"""
+    extract_evolutions(no, mo, pco, ko)
+
+Returns a dictionary of the zeta, bb objective and box objective evolutions of all solutions available for no service points, mo demand points, pco percentages, ko k's.
+"""
+function extract_evolutions(no, mo, pco, ko)
+    zetas = Dict()
+    bb = Dict()
+    box = Dict()
+    for n in no
+        for m in mo
+            for pc in pco
+                for k in ko
+                    # Specify the directory path
+                    directory_path = "source/results/data_batch_$(n)_$(m)_$(pc)/individual"
+
+                    # Specify the common beginning of the filename
+                    common_prefix = "sol_data_batch_$(n)_$(m)_$(pc)_k$(k)_"
+
+                    # Get a list of files in the directory that match the pattern
+                    files = filter(x -> occursin(common_prefix, x), readdir(directory_path))
+                    i = 0
+                    for file in files
+                        i = i+1
+                        dict = read_solutions_from_file("source/results/data_batch_$(n)_$(m)_$(pc)/individual/$(file)")
+
+                        dict_zeta = Dict([n,m,pc,k,i] => dict["evol_zeta"])
+                        dict_bb = Dict([n,m,pc,k,i] => dict["evol_bb"])
+                        dict_box = Dict([n,m,pc,k,i] => dict["evol_box"])
+                        merge!(zetas, dict_zeta)
+                        merge!(bb, dict_bb)
+                        merge!(box, dict_box)
+                    end
+                end
+            end
+        end
+    end
+    return zetas, bb, box
+end
+
+""" 
+    vecfromstr(str)
+returns a vector from the string str
+"""
+function vecfromstr(str)
+    str = split(chop(str, head=1), ",")
+    str = strip.(str, [' '])
+    str = strip.(str, ['['])
+    str = strip.(str, [']'])
+    str_s = parse.(Float64,str)
+    final = transpose(reshape(str_s, 2, :))
+    return final
+end

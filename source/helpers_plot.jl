@@ -493,3 +493,18 @@ function plot_pc_vs_time(filename; time=false, objective=false)
         savefig(cplot, "source/plots/percentage/objective.pdf")
     end
 end
+
+function plot_z(zetas; xlimits=[0,3600], relative=true)
+    time_plot = plot(xlims=xlimits)
+    for (key, values) in zetas
+        # Extract x and y coordinates from each 2D vector
+        coordinates = vecfromstr(values)
+
+        # Extract x and y coordinates from each 2D vector
+        x_vals = coordinates[:,1]
+        relative ? (y_vals = coordinates[:,2]./coordinates[1,2]) : (y_vals = coordinates[:,2])
+        # Plot the data
+        plot!(time_plot, x_vals, y_vals, label="")
+    end
+     relative ? savefig(time_plot, "source/plots/zetas/zeta_rel_$(xlimits[2]).pdf") : savefig(time_plot, "source/plots/zetas/zeta_$(xlimits[2]).pdf")
+end

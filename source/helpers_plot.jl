@@ -494,7 +494,7 @@ function plot_pc_vs_time(filename; time=false, objective=false)
     end
 end
 
-function plot_z(zetas; xlimits=[0,3600], relative=true)
+function plot_zeta_evol(zetas; xlimits=[0,3600], relative=true)
     time_plot = plot(xlims=xlimits)
     for (key, values) in zetas
         # Extract x and y coordinates from each 2D vector
@@ -507,4 +507,94 @@ function plot_z(zetas; xlimits=[0,3600], relative=true)
         plot!(time_plot, x_vals, y_vals, label="")
     end
      relative ? savefig(time_plot, "source/plots/zetas/zeta_rel_$(xlimits[2]).pdf") : savefig(time_plot, "source/plots/zetas/zeta_$(xlimits[2]).pdf")
+end
+
+"""
+    plot_zeta_distr_from_csv(filename::String; method="box")
+
+    filename without .csv ending, interval= number of intervals whichin occurences are counted together?
+"""
+function plot_zeta_distr_from_csv(filename::String; status="terminated", n_interval=10, relative=false, K=[1,2,3])
+
+    # extract data from file, remove lines with strings where bb is infeas
+    alldata = DataFrame(CSV.File("$(filename).csv"))
+
+    terminated, unterminated = split_time(alldata, "box")
+    θ_key = :zeta_box
+
+    if status == "terminated"
+        term = terminated
+    elseif status == "unterminated"
+        term = unterminated
+    else 
+        error("status invalid, enter terminated or unterminated")
+    end
+
+    obj_plot = plot(ylabel="occurrences", xlabel="zeta")
+    interval_borders = LinRange(0, 36, n_interval+1)
+
+    # sort by k
+    for k in K
+        term_k = term[term[!,:k] .== k,:]
+
+        if relative == true 
+            # get first zetas, divide by them
+        elseif relative == false
+            θk = term_k[:, θ_key]
+        else 
+            error("value for relative is invalid")
+        end
+        
+        z = []
+        println(z)
+        for i in 1:(n_interval)
+            push!(z, number_in_interval(interval_borders[i], interval_borders[i+1], θk))
+        end
+        # Find nonzero entries
+        lastk = findall(x -> x>0, z)
+
+        scatter!(obj_plot, (36/(n_interval)).*lastk, z[lastk], label="k=$k")
+    end
+    if status =="terminated"
+        relative ? savefig(obj_plot, "source/plots/zetas/zeta_dist_termin_rel_$(K).pdf") : savefig(obj_plot, "source/plots/zetas/zeta_dist_termin_$(K).pdf")
+    else 
+        relative ? savefig(obj_plot, "source/plots/zetas/zeta_dist_unterm_rel_$(K).pdf") : savefig(obj_plot, "source/plots/zetas/zeta_dist_untermin_$(K).pdf")
+    end
+end
+
+number_in_interval(lb, rb, zetas) = count(i-> ((i <= rb) && (i > lb)), zetas)
+
+
+function plot_size_vs_time(filename; percentage=0.1, K=[2])
+    alldata = DataFrame(CSV.File("$(filename).csv"))
+
+    replace!(alldata.runtime_bb, "i" => "3600.0")
+    alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
+    
+    data = alldata[alldata[!,:pc] .== percentage,:]
+    plots = []
+    for n in [8,6,4]
+        for m in [10,15,20]
+            if n == 4 && m != 10
+                time_plot = plot(xlabel="m = $m",tickfontsize=1, tickfontcolor=:white)
+            elseif m ==10
+                if n == 4
+                    time_plot=plot(ylabel="n = $n", xlabel="m = $m",tickfontsize=1, tickfontcolor=:white)
+                else 
+                    time_plot = plot(ylabel="n = $n",tickfontsize=1, tickfontcolor=:white)
+                end
+            else
+                time_plot = plot(tickfontsize=1, tickfontcolor=:white)
+            end
+            # filter data
+            data_n = data[data[!,:n] .== n,:]
+            data_m = data_n[data_n[!,:m] .== m,:]
+            data_k = data_m[in.(data_m[!,:k],(K,)),:]
+            boxplot!(time_plot, ["bb" "box" "pb"], [data_k[:,:runtime_bb] data_k[:,:runtime_box] data_k[:,:runtime_pb]], 
+                leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            push!(plots, time_plot)
+        end
+    end
+    cplot = plot(plots..., layout=(3,3))
+    savefig(cplot, "source/plots/size/runtime_pc$(percentage)_K$(K).pdf")
 end

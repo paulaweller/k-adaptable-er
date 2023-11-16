@@ -246,11 +246,11 @@ function split_time(df, alg)
 end
 
 """
-    termination_plot_from_csv(filename::String; terminated="both")
+    termination_plot_from_csv(filename::String; terminated="both", k=2, rel_to_pb=false)
 
     filename without .csv ending, terminated is one from both, bb, box, neither, bb_infeas
 """
-function termination_plot_from_csv(filename::String; terminated="both", k=2)
+function termination_plot_from_csv(filename::String; terminated="both", k=2, rel_to_pb = false)
 
     # extract data from file, remove lines with strings where bb is infeas
     alldata_dirty_allk = DataFrame(CSV.File("$(filename).csv"))
@@ -291,20 +291,30 @@ function termination_plot_from_csv(filename::String; terminated="both", k=2)
     end
 
     if terminated == "bb_infeas"
-        obj_plot = plot(ylabel="objective", title="BB infeasible")
+        
         θ_box_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :θ_box]
         θ_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :θ_box]
         θ_pb_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :θ_pb]
         θ_pb_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :θ_pb]
         if length(θ_box_term) > 0
-            boxplot!(obj_plot, ["Box t. $(length(θ_box_term))"], [θ_box_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-            boxplot!(obj_plot, ["PB"], [θ_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            if rel_to_pb == false
+                obj_plot = plot(ylabel="objective", title="BB infeasible")
+                boxplot!(obj_plot, ["Box t. $(length(θ_box_term))"], [θ_box_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+                boxplot!(obj_plot, ["PB"], [θ_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            elseif rel_to_pb == true
+                obj_plot = plot(ylabel="relative improvement %", title="BB infeasible")
+                boxplot!(obj_plot, ["Box t. $(length(θ_box_term))"], [100 .*(θ_pb_term.-θ_box_term)./θ_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            end
         end
         if length(θ_box_unterm) > 0
-            boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))"], [θ_box_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-            boxplot!(obj_plot, ["PB"], [θ_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            if rel_to_pb == false
+                boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))"], [θ_box_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+                boxplot!(obj_plot, ["PB"], [θ_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            elseif rel_to_pb == true
+                boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))"], [100 .*(θ_pb_unterm.-θ_box_unterm)./θ_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            end
         end
-        savefig(obj_plot, "source/plots/termination/k$(k)_bb_infeasible_obj.pdf")
+        rel_to_pb ? savefig(obj_plot, "source/plots/termination/k$(k)_bb_infeasible_obj_rel_to_pb.pdf") : savefig(obj_plot, "source/plots/termination/k$(k)_bb_infeasible_obj.pdf")
 
         time_box_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :runtime_box]
         time_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :runtime_box]
@@ -327,13 +337,20 @@ function termination_plot_from_csv(filename::String; terminated="both", k=2)
         end
         savefig(time_plot, "source/plots/termination/k$(k)_bb_infeasible_time.pdf")
     else
-        obj_plot_bb_box = plot(ylabel="objective", title="$(nrow(plot_data)) instances")
+        
         θ_bb = plot_data[:, :θ_bb]
         θ_box = plot_data[:, :θ_box]
         θ_pb = plot_data[:, :θ_pb]
         if nrow(plot_data) > 0
-            boxplot!(obj_plot_bb_box, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-            savefig(obj_plot_bb_box, "source/plots/termination/k$(k)_$(terminated)_terminate_obj.pdf")
+            if rel_to_pb == false
+                obj_plot_bb_box = plot(ylabel="objective", title="$(nrow(plot_data)) instances")
+                boxplot!(obj_plot_bb_box, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4) #TODO relative
+                savefig(obj_plot_bb_box, "source/plots/termination/k$(k)_$(terminated)_terminate_obj.pdf")
+            elseif rel_to_pb == true
+                obj_plot_bb_box = plot(ylabel="relative improvement %", title="$(nrow(plot_data)) instances")
+                boxplot!(obj_plot_bb_box, ["BB" "Box"], [(100 .*(θ_pb.-θ_bb)./θ_pb) (100 .*(θ_pb.-θ_box)./θ_pb)], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4) #TODO relative
+                savefig(obj_plot_bb_box, "source/plots/termination/k$(k)_$(terminated)_terminate_obj_rel.pdf")
+            end
         end
 
         time_bb = plot_data[:, :runtime_bb]
@@ -494,19 +511,35 @@ function plot_pc_vs_time(filename; time=false, objective=false)
     end
 end
 
-function plot_zeta_evol(zetas; xlimits=[0,3600], relative=true)
+function plot_evol(zetas; xlimits=[0,3600], relative=true, name="zeta", last=false)
     time_plot = plot(xlims=xlimits)
     for (key, values) in zetas
         # Extract x and y coordinates from each 2D vector
-        coordinates = vecfromstr(values)
+        if values == "b" 
 
-        # Extract x and y coordinates from each 2D vector
-        x_vals = coordinates[:,1]
-        relative ? (y_vals = coordinates[:,2]./coordinates[1,2]) : (y_vals = coordinates[:,2])
-        # Plot the data
-        plot!(time_plot, x_vals, y_vals, label="")
+        else
+            coordinates = vecfromstr(values)
+            
+            # Extract x and y coordinates from each 2D vector
+            x_vals = coordinates[:,1]
+            if coordinates[1,2] == 0
+                if last == true
+                    relative ? (y_vals = (coordinates[end,2] .- coordinates[:,2])./coordinates[end,2]) : (y_vals = coordinates[:,2])
+                else 
+                    relative ? (y_vals = (coordinates[2,2] .- coordinates[:,2])./coordinates[2,2]) : (y_vals = coordinates[:,2])
+                end
+            else 
+                relative ? (y_vals = (coordinates[1,2] .- coordinates[:,2])./coordinates[1,2]) : (y_vals = coordinates[:,2])
+            end
+            # Plot the data
+            plot!(time_plot, x_vals, y_vals, label="",line = (0.1,1), color=palette(:default)[1])
+        end
     end
-     relative ? savefig(time_plot, "source/plots/zetas/zeta_rel_$(xlimits[2]).pdf") : savefig(time_plot, "source/plots/zetas/zeta_$(xlimits[2]).pdf")
+    if last == true
+        relative ? savefig(time_plot, "source/plots/gaps/$(name)_end_rel_$(xlimits[2]).pdf") : savefig(time_plot, "source/plots/gaps/$(name)_$(xlimits[2]).pdf")
+    else
+        relative ? savefig(time_plot, "source/plots/gaps/$(name)_rel_$(xlimits[2]).pdf") : savefig(time_plot, "source/plots/gaps/$(name)_$(xlimits[2]).pdf")
+    end
 end
 
 """
@@ -576,15 +609,15 @@ function plot_size_vs_time(filename; percentage=0.1, K=[2])
     for n in [8,6,4]
         for m in [10,15,20]
             if n == 4 && m != 10
-                time_plot = plot(xlabel="m = $m",tickfontsize=1, tickfontcolor=:white)
+                time_plot = plot(xlabel="m = $m")#,tickfontsize=1, tickfontcolor=:white)
             elseif m ==10
                 if n == 4
-                    time_plot=plot(ylabel="n = $n", xlabel="m = $m",tickfontsize=1, tickfontcolor=:white)
+                    time_plot=plot(ylabel="n = $n", xlabel="m = $m")#,tickfontsize=1, tickfontcolor=:white)
                 else 
-                    time_plot = plot(ylabel="n = $n",tickfontsize=1, tickfontcolor=:white)
+                    time_plot = plot(ylabel="n = $n")#,tickfontsize=1, tickfontcolor=:white)
                 end
             else
-                time_plot = plot(tickfontsize=1, tickfontcolor=:white)
+                time_plot = plot()#tickfontsize=1, tickfontcolor=:white)
             end
             # filter data
             data_n = data[data[!,:n] .== n,:]

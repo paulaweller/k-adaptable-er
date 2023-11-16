@@ -10,23 +10,65 @@ function observable_worst_case_objectives(no, mo, pco, ko)
 
     for (key, values) in pb
         # Extract x and y coordinates from each 2D vector
-
-        y_val_pb = arrayfromstr(values)
         
-        # Extract x and y coordinates from each 2D vector
-        x_vals = coordinates[:,1]
-        if coordinates[1,2] == 0
-            if last == true
-                relative ? (y_vals = (coordinates[end,2] .- coordinates[:,2])./coordinates[end,2]) : (y_vals = coordinates[:,2])
-            else 
-                relative ? (y_vals = (coordinates[2,2] .- coordinates[:,2])./coordinates[2,2]) : (y_vals = coordinates[:,2])
-            end
-        else 
-            relative ? (y_vals = (coordinates[1,2] .- coordinates[:,2])./coordinates[1,2]) : (y_vals = coordinates[:,2])
-        end
-        # Plot the data
-        plot!(time_plot, x_vals, y_vals, label="",line = (0.1,1), color=palette(:default)[1])
+        val_bb = bb[key]
+        val_box = box[key]
+
+        # key is [n,m,pc,k,l]   
+        n = key[1]
+        m = key[2]
+        pc = key[3]
+        k = key[4]
+        l = key[5]     
+
+        y_val_pb = arrayfromstr(values, n,m,k)
+        y_val_bb = arrayfromstr(val_bb, n,m,k)
+        y_val_box = arrayfromstr(val_box, n,m,k)
+        # read problem instance
+        inst = read_instance_for_param(n,m,pc,l)
+
+        theta_pb = solve_slacks(y_val_pb, inst)
+        theta_bb = solve_slacks(y_val_bb, inst)
+        theta_box = solve_slacks(y_val_box, inst)
+
+        push!(obj_pb, theta_pb)
+        push!(obj_bb, theta_bb)
+        push!(obj_box, theta_box)
+        
     end
+    return obj_pb, obj_bb, obj_box
+end
+
+function arrayfromstr(str, n,m,k)
+    final = zeros(n,m,k)
+    # split by k
+    str = split(chop(str, head=1), ";;;")
+    k_it = 0
+    for str_k in str
+        k_it = k_it+1
+        if length(str) > 0
+            # remove spaces in beginning and end
+            str_k = strip(str_k, [' '])
+            # split by n (service points)
+            str_k = split(str_k, ";")
+            n_it = 0
+            for str_k_n in str_k
+                n_it = n_it+1
+
+                str_k_n = strip(str_k_n, [' '])
+                str_k_n = split(str_k_n, " ")
+                if length(str_k_n) == m
+                    str_k_n = parse.(Float64,str_k_n)
+                    final[n_it,:,k_it] = str_k_n
+                else error("Expected m = $m, but received m = $(length(str_k_n))")
+                end
+            end
+        end
+    end
+    (k_it != k) ? error("Expected k = $k, but received k = $(k_it)") : nothing
+    (n_it != n) ? error("Expected n = $n, but received n = $(n_it)") : nothing
+
+    return final
 end
 
 

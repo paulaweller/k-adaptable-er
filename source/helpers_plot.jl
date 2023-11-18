@@ -515,7 +515,7 @@ function plot_evol(zetas; xlimits=[0,3600], relative=true, name="zeta", last=fal
     time_plot = plot(xlims=xlimits)
     for (key, values) in zetas
         # Extract x and y coordinates from each 2D vector
-        if values == "b" 
+        if length(values) == 1 
 
         else
             coordinates = vecfromstr(values)
@@ -532,7 +532,7 @@ function plot_evol(zetas; xlimits=[0,3600], relative=true, name="zeta", last=fal
                 relative ? (y_vals = (coordinates[1,2] .- coordinates[:,2])./coordinates[1,2]) : (y_vals = coordinates[:,2])
             end
             # Plot the data
-            plot!(time_plot, x_vals, y_vals, label="",line = (0.1,1), color=palette(:default)[1])
+            plot!(time_plot, x_vals, y_vals, label="",line = (0.3,1), color=palette(:default)[1])
         end
     end
     if last == true
@@ -630,4 +630,39 @@ function plot_size_vs_time(filename; percentage=0.1, K=[2])
     end
     cplot = plot(plots..., layout=(3,3))
     savefig(cplot, "source/plots/size/runtime_pc$(percentage)_K$(K).pdf")
+end
+
+function observable_plot(o_pb, o_bb, o_box, oo_pb, oo_box,k, pc; rel=true)
+    if rel == true
+        plot1 = plot(ylabel="observable improvement")
+        boxplot!(plot1, ["bb ($(length(o_bb)))" "box"], [100 .*(o_pb.-o_bb)./o_pb 100 .*(o_pb.-o_box)./o_pb], 
+                leg=false, 
+                linewidth=2,
+                linecolour= :match,
+                fillalpha = 0.4)
+        if length(oo_pb) > 0
+            boxplot!(plot1, ["bb infeas ($(length(oo_box)))"], [100 .*(oo_pb.-oo_box)./oo_pb], 
+                    leg=false, 
+                    linewidth=2,
+                    linecolour= :match,
+                    fillalpha = 0.4)
+        end
+        savefig(plot1, "source/plots/observable/rel_objective_$(pc)_k$(k).pdf")
+    elseif rel == false
+        plot1 = plot(ylabel="observable worst-case objective")
+        boxplot!(plot1, ["bb($(length(o_bb)))" "box" "pb"], [o_bb o_box o_pb], 
+                leg=false, 
+                linewidth=2,
+                linecolour= :match,
+                fillalpha = 0.4)
+        if length(oo_pb) > 0
+                boxplot!(plot1, ["bb infeas ($(length(oo_box))): box" " bb infeas: pb"], [oo_box oo_pb], 
+                leg=false, 
+                linewidth=2,
+                linecolour= :match,
+                fillalpha = 0.4)
+        end
+        savefig(plot1, "source/plots/observable/objective_$(pc)_k$(k).pdf")
+    else error("optinal argument rel must be true or false")
+    end
 end

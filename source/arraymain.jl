@@ -9,7 +9,8 @@ lim = 3600.0         # runtime limit in seconds
 inst_read = read_one_instance_from_file(l, "data/$(file).txt")
 
 # TODO TEST THIS
-save_x = eval(mod(l, 10) == 0)
+# save_x = eval(mod(l, 10) == 0)
+save_x = true
 results, solutions = run_instance(k, inst_read, tlim=lim, return_solutions=save_x)
 
 # add line/instance number to results

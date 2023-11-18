@@ -20,6 +20,14 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
     x_i = Float64[]            # first-stage solution
     y_i = zeros(Float64,I,J,K)            # second-stage solution
     s_i = zeros(Float64, J,K)           # second-stage slack variables
+
+    # current lower bound solution
+    x = Float64[]            # first-stage solution
+    y = zeros(Float64,I,J,K)            # second-stage solution
+    s = zeros(Float64, J,K)           # second-stage slack variables
+    tau_cur = N[1] 
+
+    
     best_partition = Vector{Vector{Float64}}[Iterators.repeated(Vector{Float64}[],K)...]
     obj_evolution = Vector{Float64}[]
     it = 0              # iteration count
@@ -31,7 +39,7 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
         # and delete from set of unexplored nodes
         
         tau = popfirst!(N)
-
+        tau_cur = tau
         # (θ, x, y) = Solve Scenario-based K-adapt Problem (6): min theta with uncsets tau 
         theta, x, y, s = solve_scenario_based(tau, inst, time_start, time_limit)
         #println("theta = $(theta), theta_i = $(theta_i)")
@@ -65,7 +73,7 @@ function solve_bb(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240.
     
     if theta_i == 1e20
 
-        return "infeasible"
+        return x, y, s, tau_cur, theta_i, it, runtime, obj_evolution
 
     else
 

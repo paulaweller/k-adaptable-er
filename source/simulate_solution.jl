@@ -126,7 +126,9 @@ function extract_solutions(no, mo, pco, ko)
                     # Get a list of files in the directory that match the pattern
                     files = filter(x -> occursin(common_prefix, x), readdir(directory_path))
                     for file in files
-                        l = parse(Int, file[(end-5):(end-4)])
+                        l = file[(end-5):(end-4)]
+                        l = strip(l, ['l'])
+                        l = parse(Int, l)
                         dict = read_solutions_from_file("source/results/data_batch_$(n)_$(m)_$(pc)/individual/$(file)")
 
                         dict_pb = Dict([n,m,pc,k,l] => dict["y_pb"])
@@ -169,6 +171,7 @@ function solve_worst_case_objective(y, inst::AllocationInstance)
     K = size(y, 3)
 
     m = BilevelModel(() -> Gurobi.Optimizer(GRB_ENV_bb))
+    set_optimizer_attribute(m, "OutputFlag", 0)
 
     ########### upper model
 

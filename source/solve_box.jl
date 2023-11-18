@@ -18,6 +18,7 @@ function solve_box(K::Int64, inst::AllocationInstance; time_limit::Float64 = 240
 
     separation_modell = build_separation_problem_box(inst, K, xi)
     zeta, d = solve_separation_problem_box(separation_modell, time_start, time_limit)
+    push!(zeta_evolution, [(now()-time_start).value/1000, zeta])
     iteration = 0 # iteration counter
 
     while zeta > 1e-6 && (runtime <= time_limit)

@@ -17,15 +17,17 @@ function observable_worst_case_objectives(no, mo, pco, ko)
         
         val_bb = bb[key]
         val_box = box[key]
+
+        # key is [n,m,pc,k,l]   
+        n = key[1]
+        m = key[2]
+        pc = key[3]
+        k = key[4]
+        l = key[5]   
+        it = round(Int, 1 + (k-1)/(m-1))  
         if val_bb == "n"
-            # key is [n,m,pc,k,l]   
-            n = key[1]
-            m = key[2]
-            pc = key[3]
-            k = key[4]
-            l = key[5]     
-
-            y_val_pb = arrayfromstr(values, n,m,1)
+            
+            y_val_pb = arrayfromstr(values, n,m,it)
             y_val_box = arrayfromstr(val_box, n,m,k)
             # read problem instance
             inst = read_instance_for_param(n,m,pc,l)
@@ -35,15 +37,9 @@ function observable_worst_case_objectives(no, mo, pco, ko)
 
             push!(objo_pb, theta_pb)
             push!(objo_box, theta_box)
-        elseif val_bb =='n'
-            # key is [n,m,pc,k,l]   
-            n = key[1]
-            m = key[2]
-            pc = key[3]
-            k = key[4]
-            l = key[5]     
+        elseif val_bb =='n'  
 
-            y_val_pb = arrayfromstr(values, n,m,1)
+            y_val_pb = arrayfromstr(values, n,m,it)
             y_val_box = arrayfromstr(val_box, n,m,k)
             # read problem instance
             inst = read_instance_for_param(n,m,pc,l)
@@ -53,15 +49,9 @@ function observable_worst_case_objectives(no, mo, pco, ko)
 
             push!(objo_pb, theta_pb)
             push!(objo_box, theta_box)
-        else
-            # key is [n,m,pc,k,l]   
-            n = key[1]
-            m = key[2]
-            pc = key[3]
-            k = key[4]
-            l = key[5]     
+        else  
 
-            y_val_pb = arrayfromstr(values, n,m,1)
+            y_val_pb = arrayfromstr(values, n,m,it)
             y_val_bb = arrayfromstr(val_bb, n,m,k)
             y_val_box = arrayfromstr(val_box, n,m,k)
             # read problem instance

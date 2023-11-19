@@ -11,7 +11,6 @@ function observable_worst_case_objectives(no, mo, pco, ko)
     obj_box = []
     objo_pb = []
     objo_box = []
-
     for (key, values) in pb
         # Extract x and y coordinates from each 2D vector
         
@@ -24,6 +23,9 @@ function observable_worst_case_objectives(no, mo, pco, ko)
         pc = key[3]
         k = key[4]
         l = key[5]   
+        # if mod(l,10) == 0
+            println("solving ", key)
+        # end
         it = round(Int, 1 + (k-1)/(m-1))  
         if val_bb == "n"
             
@@ -56,9 +58,11 @@ function observable_worst_case_objectives(no, mo, pco, ko)
             y_val_box = arrayfromstr(val_box, n,m,k)
             # read problem instance
             inst = read_instance_for_param(n,m,pc,l)
-
+            println("\n pb...")
             theta_pb = solve_worst_case_objective(y_val_pb, inst)
+            println("\n bb...")
             theta_bb = solve_worst_case_objective(y_val_bb, inst)
+            println("\n box...")
             theta_box = solve_worst_case_objective(y_val_box, inst)
 
             push!(obj_pb, theta_pb)
@@ -211,7 +215,7 @@ function solve_worst_case_objective(y, inst::AllocationInstance)
     @objective(Lower(m), Min, sum(z[k] for k in 1:K) - 0.01*obj)
     @objective(Upper(m), Max, obj)
 
-    # set_remaining_time(m, time_start, time_limit)
+    set_time_limit_sec(m, 40)
     # solve
     optimize!(m)
     # if result_count(rm) == 0

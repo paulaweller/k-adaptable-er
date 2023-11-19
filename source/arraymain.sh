@@ -25,7 +25,7 @@
 # export FILE="data_batch_8_20_0.1" 
 # export FILE="data_batch_8_20_0.3"
 # k
-export K=3
+export K=2
 export L=$SLURM_ARRAY_TASK_ID
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
 mkdir results/$FILE

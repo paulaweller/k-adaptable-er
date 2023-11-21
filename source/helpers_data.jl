@@ -233,14 +233,18 @@ function extract_evolutions(no, mo, pco, ko)
                     i = 0
                     for file in files
                         i = i+1
-                        dict = read_solutions_from_file("source/results/data_batch_$(n)_$(m)_$(pc)/individual/$(file)")
+                        l = file[(end-5):(end-4)]
+                        l = strip(l, ['l'])
+                        l = parse(Int64, l)
 
-                        dict_zeta = Dict([n,m,pc,k,i] => dict["evol_zeta"])
-                        dict_bb = Dict([n,m,pc,k,i] => dict["evol_bb"])
-                        dict_box = Dict([n,m,pc,k,i] => dict["evol_box"])
+                        dict = read_solutions_from_file("source/results/data_batch_$(n)_$(m)_$(pc)/individual/$(file)")
+                        dict_zeta = Dict([n,m,pc,k,l] => dict["evol_zeta"])
+                        dict_bb = Dict([n,m,pc,k,l] => dict["evol_bb"])
+                        dict_box = Dict([n,m,pc,k,l] => dict["evol_box"])
                         merge!(zetas, dict_zeta)
                         merge!(bb, dict_bb)
                         merge!(box, dict_box)
+
                     end
                 end
             end
@@ -254,7 +258,9 @@ end
 returns a vector from the string str
 """
 function vecfromstr(str)
-    str = split(chop(str, head=1), ",")
+    str = strip(str, ['['])
+    str = strip(str, [']'])
+    str = split(str, ",")
     str = strip.(str, [' '])
     str = strip.(str, ['['])
     str = strip.(str, [']'])

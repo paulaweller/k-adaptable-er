@@ -250,20 +250,22 @@ end
 
     filename without .csv ending, terminated is one from both, bb, box, neither, bb_infeas
 """
-function termination_plot_from_csv(filename::String; terminated="both", k=2, rel_to_pb = false)
+function termination_plot_from_csv(filename::String; terminated="both", K=[2], rel_to_pb = false)
 
     # extract data from file, remove lines with strings where bb is infeas
     alldata_dirty_allk = DataFrame(CSV.File("$(filename).csv"))
-    alldata_dirty = alldata_dirty_allk[alldata_dirty_allk[!,:k] .== k,:]
-    alldata = alldata_dirty[alldata_dirty[!,:it_bb] .!= "s",:]
-    alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
-    alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
+
+    alldata_dirty = alldata_dirty_allk[in.(alldata_dirty_allk[!,:k],(K,)),:]
+
+    alldata = alldata_dirty[alldata_dirty[!,:θ_bb] .!= 1e20,:]
+    # alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
+    # alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
     # instances where bb/box terminated/ didn't terminate
     bb_term, bb_unterm = split_time(alldata, "bb")
     box_term, box_unterm = split_time(alldata, "box")
 
     # instances where bb was infeasible
-    bb_infeas = alldata_dirty[alldata_dirty[!,:it_bb] .== "s",:]
+    bb_infeas = alldata_dirty[alldata_dirty[!,:θ_bb] .== 1e20,:]
 
     # all combinations of termination
     both_term = semijoin(bb_term, box_term, on = [:instance, :n, :m, :pc, :k])
@@ -349,7 +351,7 @@ function termination_plot_from_csv(filename::String; terminated="both", k=2, rel
             elseif rel_to_pb == true
                 obj_plot_bb_box = plot(ylabel="relative improvement %", title="$(nrow(plot_data)) instances")
                 boxplot!(obj_plot_bb_box, ["BB" "Box"], [(100 .*(θ_pb.-θ_bb)./θ_pb) (100 .*(θ_pb.-θ_box)./θ_pb)], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4) #TODO relative
-                savefig(obj_plot_bb_box, "source/plots/termination/k$(k)_$(terminated)_terminate_obj_rel.pdf")
+                savefig(obj_plot_bb_box, "source/plots/termination/k$(K)_$(terminated)_terminate_obj_rel.pdf")
             end
         end
 
@@ -363,7 +365,7 @@ function termination_plot_from_csv(filename::String; terminated="both", k=2, rel
                 linewidth=2,
                 linecolour= :match,
                 fillalpha = 0.4)
-            savefig(time_plot, "source/plots/termination/k$(k)_$(terminated)_terminate_time.pdf")
+            savefig(time_plot, "source/plots/termination/k$(K)_$(terminated)_terminate_time.pdf")
         end
     end
     # combi = plot(obj_plot_bb_box, time_plot, layout=(1,2), legend=false)
@@ -383,8 +385,8 @@ function k_plot_from_csv(filename::String; method="box", relative=false)
     if method == "bb"
         # filter feasible ones
         alldata = alldata_dirty[alldata_dirty[!,:it_bb] .!= "s",:]
-        alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
-        alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
+        # alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
+        # alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
         term, unterm = split_time(alldata, "bb")
         θ_key = :θ_bb
         time_key = :runtime_bb
@@ -430,13 +432,13 @@ function k_plot_from_csv(filename::String; method="box", relative=false)
     else 
         error("value for relative is invalid")
     end
-
+    n_inst = length(θ1)
 
     boxplot!(obj_plot, ["k=1" "k=2" "k=3"], [θ1 θ2 θ3], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
     if relative == true 
-        savefig(obj_plot, "source/plots/k_comparison/k3_$(method)_relobj.pdf")
+        savefig(obj_plot, "source/plots/k_comparison/relobj_k_$(method)_$(n_inst).pdf")
     else 
-        savefig(obj_plot, "source/plots/k_comparison/k3_$(method)_obj.pdf")
+        savefig(obj_plot, "source/plots/k_comparison/obj_k_$(method)_$(n_inst).pdf")
     end
 
     t1 = term_is1[:, time_key]
@@ -449,7 +451,7 @@ function k_plot_from_csv(filename::String; method="box", relative=false)
         linecolour= :match,
         fillalpha = 0.4)
 
-    savefig(time_plot, "source/plots/k_comparison/k3_$(method)_time.pdf")
+    savefig(time_plot, "source/plots/k_comparison/time_k_$(method)_$(n_inst).pdf")
     # combi = plot(obj_plot_bb_box, time_plot, layout=(1,2), legend=false)
     # savefig(combi, "$(filename)_boxplot.pdf")
 
@@ -458,8 +460,8 @@ end
 function plot_pc_vs_time(filename; time=false, objective=false)
     alldata = DataFrame(CSV.File("$(filename).csv"))
 
-    replace!(alldata.runtime_bb, "i" => "3600.0")
-    alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
+    # replace!(alldata.runtime_bb, "i" => "3600.0")
+    # alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
     
     data1 = alldata[alldata[!,:pc] .== 0.1,:]
     data3 = alldata[alldata[!,:pc] .== 0.3,:]
@@ -483,8 +485,9 @@ function plot_pc_vs_time(filename; time=false, objective=false)
         savefig(cplot, "source/plots/percentage/time.pdf")
     end
     if objective == true
-        alldata_clean = alldata[alldata[!,:it_bb] .!= "s",:]
-        alldata_clean[!,:θ_bb] = parse.(Float64, alldata_clean[!,:θ_bb])
+        alldata_clean = alldata[alldata[!,:θ_bb] .!= 1e20,:]
+        # alldata_clean = alldata[alldata[!,:it_bb] .!= "s",:]
+        # alldata_clean[!,:θ_bb] = parse.(Float64, alldata_clean[!,:θ_bb])
 
         data1 = alldata_clean[alldata_clean[!,:pc] .== 0.1,:]
         data3 = alldata_clean[alldata_clean[!,:pc] .== 0.3,:]
@@ -515,9 +518,7 @@ function plot_evol(zetas; xlimits=[0,3600], relative=true, name="zeta", last=fal
     time_plot = plot(xlims=xlimits)
     for (key, values) in zetas
         # Extract x and y coordinates from each 2D vector
-        if length(values) == 1 
-
-        else
+        if length(values) > 1 && values != "Vector{Float64}[]"
             coordinates = vecfromstr(values)
             
             # Extract x and y coordinates from each 2D vector
@@ -532,7 +533,7 @@ function plot_evol(zetas; xlimits=[0,3600], relative=true, name="zeta", last=fal
                 relative ? (y_vals = (coordinates[1,2] .- coordinates[:,2])./coordinates[1,2]) : (y_vals = coordinates[:,2])
             end
             # Plot the data
-            plot!(time_plot, x_vals, y_vals, label="",line = (0.3,1), color=palette(:default)[1])
+            plot!(time_plot, x_vals[1:(end)], y_vals[1:(end)], label="",line = (0.1,1), color=palette(:default)[1])
         end
     end
     if last == true
@@ -564,7 +565,7 @@ function plot_zeta_distr_from_csv(filename::String; status="terminated", n_inter
     end
 
     obj_plot = plot(ylabel="occurrences", xlabel="zeta")
-    interval_borders = LinRange(0, 36, n_interval+1)
+    interval_borders = LinRange(0, 50, n_interval+1)
 
     # sort by k
     for k in K
@@ -589,9 +590,9 @@ function plot_zeta_distr_from_csv(filename::String; status="terminated", n_inter
         scatter!(obj_plot, (36/(n_interval)).*lastk, z[lastk], label="k=$k")
     end
     if status =="terminated"
-        relative ? savefig(obj_plot, "source/plots/zetas/zeta_dist_termin_rel_$(K).pdf") : savefig(obj_plot, "source/plots/zetas/zeta_dist_termin_$(K).pdf")
+        relative ? savefig(obj_plot, "source/plots/zetas/last_zeta/zeta_dist_termin_rel_$(K).pdf") : savefig(obj_plot, "source/plots/zetas/last_zeta/zeta_dist_termin_$(K).pdf")
     else 
-        relative ? savefig(obj_plot, "source/plots/zetas/zeta_dist_unterm_rel_$(K).pdf") : savefig(obj_plot, "source/plots/zetas/zeta_dist_untermin_$(K).pdf")
+        relative ? savefig(obj_plot, "source/plots/zetas/last_zeta/zeta_dist_unterm_rel_$(K).pdf") : savefig(obj_plot, "source/plots/zetas/last_zeta/zeta_dist_untermin_$(K).pdf")
     end
 end
 
@@ -601,8 +602,8 @@ number_in_interval(lb, rb, zetas) = count(i-> ((i <= rb) && (i > lb)), zetas)
 function plot_size_vs_time(filename; percentage=0.1, K=[2])
     alldata = DataFrame(CSV.File("$(filename).csv"))
 
-    replace!(alldata.runtime_bb, "i" => "3600.0")
-    alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
+    # replace!(alldata.runtime_bb, "i" => "3600.0")
+    # alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
     
     data = alldata[alldata[!,:pc] .== percentage,:]
     plots = []

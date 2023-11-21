@@ -37,4 +37,30 @@ function extract_results(no, mo, pco, ko)
     return results
 end
 
-extract_results([4,6,8],[10,15,20], [0.1, 0.3], [1,2,3,4,5])
+# extract_results([4,6,8],[10,15,20], [0.1, 0.3], [1,2,3,4,5])
+
+function add_observables(no, mo, pco, ko)
+    
+    observ = DataFrame()
+
+    for pc in pco
+        println(" pc = $(pc)")
+        for k in ko
+            println("\n k = $k")
+            obs_df = observable_worst_case_objectives(no, mo, pc, k)
+
+            #merge with other data
+            observ= vcat(observ, obs_df)
+        end
+    end
+
+    
+    return observ
+end
+
+observ = add_observables([4,6,8], [10,15,20], [0.1,0.3], [1,2,3,4,5])
+results = DataFrame(CSV.File("source/results/all_batches/combined_results_all_batches.csv"))
+results = innerjoin(results, observ, on = [:n,:m,:k,:pc,:instance])
+    output = open("source/results/all_batches/combined_results_all_batches_obs.csv", "w")
+    CSV.write(output, results)
+    close(output)

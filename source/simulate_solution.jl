@@ -6,11 +6,10 @@ const GRB_ENV_bb = Gurobi.Env()
 function observable_worst_case_objectives(no, mo, pco, ko)
     pb, bb, box = extract_solutions(no, mo, pco, ko)
 
-    obj_pb = []
-    obj_bb = []
-    obj_box = []
-    objo_pb = []
-    objo_box = []
+    obj = DataFrame()
+    obj_pb = Dict()
+    obj_bb = Dict()
+    obj_box = Dict()
     for (key, values) in pb
         # Extract x and y coordinates from each 2D vector
         
@@ -24,54 +23,32 @@ function observable_worst_case_objectives(no, mo, pco, ko)
         k = key[4]
         l = key[5]   
         # if mod(l,10) == 0
-            println("solving ", key)
+            # println("solving ", key)
         # end
         it = round(Int, 1 + (k-1)/(m-1))  
         if val_bb == "n"
-            
-            y_val_pb = arrayfromstr(values, n,m,it)
-            y_val_box = arrayfromstr(val_box, n,m,k)
-            # read problem instance
-            inst = read_instance_for_param(n,m,pc,l)
-
-            theta_pb = solve_worst_case_objective(y_val_pb, inst)
-            theta_box = solve_worst_case_objective(y_val_box, inst)
-
-            push!(objo_pb, theta_pb)
-            push!(objo_box, theta_box)
+            error("bb has a string entry")
         elseif val_bb =='n'  
-
-            y_val_pb = arrayfromstr(values, n,m,it)
-            y_val_box = arrayfromstr(val_box, n,m,k)
-            # read problem instance
-            inst = read_instance_for_param(n,m,pc,l)
-
-            theta_pb = solve_worst_case_objective(y_val_pb, inst)
-            theta_box = solve_worst_case_objective(y_val_box, inst)
-
-            push!(objo_pb, theta_pb)
-            push!(objo_box, theta_box)
-        else  
-
+            error("bb has a char value")
+        else
             y_val_pb = arrayfromstr(values, n,m,it)
             y_val_bb = arrayfromstr(val_bb, n,m,k)
             y_val_box = arrayfromstr(val_box, n,m,k)
             # read problem instance
             inst = read_instance_for_param(n,m,pc,l)
-            println("\n pb...")
+            # println("\n pb...")
             theta_pb = solve_worst_case_objective(y_val_pb, inst)
-            println("\n bb...")
+            # println("\n bb...")
             theta_bb = solve_worst_case_objective(y_val_bb, inst)
-            println("\n box...")
+            # println("\n box...")
             theta_box = solve_worst_case_objective(y_val_box, inst)
+            df_temp = DataFrame(n = [n], m = [m], pc = [pc], k = [k], instance = [l], obs_pb = [theta_pb], obs_bb = [theta_bb], obs_box = [theta_box])
 
-            push!(obj_pb, theta_pb)
-            push!(obj_bb, theta_bb)
-            push!(obj_box, theta_box)
+            obj = vcat(obj, df_temp)
         end
         
     end
-    return obj_pb, obj_bb, obj_box, objo_pb, objo_box 
+    return obj
 end
 
 function arrayfromstr(str, n, m, k)
@@ -215,7 +192,7 @@ function solve_worst_case_objective(y, inst::AllocationInstance)
     @objective(Lower(m), Min, sum(z[k] for k in 1:K) - 0.01*obj)
     @objective(Upper(m), Max, obj)
 
-    set_time_limit_sec(m, 40)
+    set_time_limit_sec(m, 20)
     # solve
     optimize!(m)
     # if result_count(rm) == 0

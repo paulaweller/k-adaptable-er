@@ -397,15 +397,24 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
         alldata = alldata_dirty#[alldata_dirty[!,:it_bb] .!= "s",:]
         # alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
         # alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
-        term, unterm = split_time(alldata, "bb")
-        observable ? term = alldata : ()
-        observable ? (θ_key = :obs_bb) : (θ_key = :θ_bb)
+        if observable 
+            term = alldata
+            θ_key = :obs_bb
+        else
+            term, unterm = split_time(alldata, "bb")
+            θ_key = :θ_bb
+        end
+        
         time_key = :runtime_bb
     elseif method == "box"
         alldata = alldata_dirty
-        term, unterm = split_time(alldata, "box")
-        observable ? term = alldata :
-        observable ? (θ_key = :obs_box) : (θ_key = :θ_box)
+        if observable
+            term = alldata
+            θ_key = :obs_box
+        else
+            term, unterm = split_time(alldata, "box")
+            θ_key = :θ_box
+        end
         time_key = :runtime_box
     elseif method == "pb"
         term = alldata_dirty
@@ -416,37 +425,49 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
     end
     # sort by k
     term_k1 = term[term[!,:k] .== 1,:]
+    @show size(term_k1)
     term_k2 = term[term[!,:k] .== 2,:]
+    @show size(term_k2)
     term_k3 = term[term[!,:k] .== 3,:]
+    @show size(term_k3)
 
-    term_is1 = semijoin(term_k1, term_k2, on = [:instance, :n, :m, :pc])
-    term_is1 = semijoin(term_is1, term_k3, on = [:instance, :n, :m, :pc])
-    sort!(term_is1, [:n, :m, :pc, :instance])
+    if observable 
+        term_is1 = term_k1
+        term_is2 = term_k2
+        term_is3 = term_k3
+        sort!(term_is1, [:n, :m, :pc, :instance])
+        sort!(term_is2, [:n, :m, :pc, :instance])
+        sort!(term_is3, [:n, :m, :pc, :instance])
+    else
+        term_is1 = semijoin(term_k1, term_k2, on = [:instance, :n, :m, :pc])
+        term_is1 = semijoin(term_is1, term_k3, on = [:instance, :n, :m, :pc])
+        sort!(term_is1, [:n, :m, :pc, :instance])
 
-    term_is2 = semijoin(term_k2, term_k1, on = [:instance, :n, :m, :pc])
-    term_is2 = semijoin(term_is2, term_k3, on = [:instance, :n, :m, :pc])
-    sort!(term_is2, [:n, :m, :pc, :instance])
+        #term_is2 = semijoin(term_k2, term_k1, on = [:instance, :n, :m, :pc])
+        term_is2 = semijoin(term_is2, term_k3, on = [:instance, :n, :m, :pc])
+        sort!(term_is2, [:n, :m, :pc, :instance])
 
-    term_is3 = semijoin(term_k3, term_k1, on = [:instance, :n, :m, :pc])
-    term_is3 = semijoin(term_is3, term_k2, on = [:instance, :n, :m, :pc])
-    sort!(term_is3, [:n, :m, :pc, :instance])
+        #term_is3 = semijoin(term_k3, term_k1, on = [:instance, :n, :m, :pc])
+        term_is3 = semijoin(term_is3, term_k2, on = [:instance, :n, :m, :pc])
+        sort!(term_is3, [:n, :m, :pc, :instance])
+    end
 
     if relative == true 
         obj_plot = plot(ylabel="relative improvement of objective")
-        θ1 = 100 .*(1 .- term_is1[:, θ_key]./term_is1[:, θ_key])
-        θ2 = 100 .*(1 .- term_is2[:, θ_key]./term_is1[:, θ_key])
-        θ3 = 100 .*(1 .- term_is3[:, θ_key]./term_is1[:, θ_key])
+        #θ1 = 100 .*(1 .- term_is1[:, θ_key]./term_is1[:, θ_key])
+        θ2 = 100 .*(1 .- term_is2[:, θ_key]./term_is2[:, :θ_pb])
+        θ3 = 100 .*(1 .- term_is3[:, θ_key]./term_is3[:, :θ_pb])
     elseif relative == false
         obj_plot = plot(ylabel="objective")
-        θ1 = term_is1[:, θ_key]
+        #θ1 = term_is1[:, θ_key]
         θ2 = term_is2[:, θ_key]
         θ3 = term_is3[:, θ_key]
     else 
         error("value for relative is invalid")
     end
-    n_inst = length(θ1)
+    n_inst = length(θ2)
 
-    boxplot!(obj_plot, ["k=1" "k=2" "k=3"], [θ1 θ2 θ3], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+    boxplot!(obj_plot, ["k=2" "k=3"], [θ2 θ3], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
     if relative == true 
         observable ? savefig(obj_plot, "source/plots/k_comparison/obsrelobj_k_$(method)_$(n_inst).pdf") : savefig(obj_plot, "source/plots/k_comparison/relobj_k_$(method)_$(n_inst).pdf")
     else 

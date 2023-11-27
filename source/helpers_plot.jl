@@ -298,25 +298,32 @@ function termination_plot_from_csv(filename::String; terminated="both", K=[2], r
         θ_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :θ_box]
         θ_pb_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :θ_pb]
         θ_pb_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :θ_pb]
-        if length(θ_box_term) > 0
-            if rel_to_pb == false
-                obj_plot = plot(ylabel="objective", title="BB infeasible")
-                boxplot!(obj_plot, ["Box t. $(length(θ_box_term))"], [θ_box_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-                boxplot!(obj_plot, ["PB"], [θ_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-            elseif rel_to_pb == true
-                obj_plot = plot(ylabel="relative improvement %", title="BB infeasible")
-                boxplot!(obj_plot, ["Box t. $(length(θ_box_term))"], [100 .*(θ_pb_term.-θ_box_term)./θ_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+
+        obs_box_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :obs_box]
+        obs_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :obs_box]
+        obs_pb_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :obs_pb]
+        obs_pb_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :obs_pb]
+        if rel_to_pb == false
+            obj_plot = plot(ylabel="objective", title="BB infeasible")
+            if size(θ_box_term,1) > 0
+                boxplot!(obj_plot, ["Box t. $(length(θ_box_term))" "Box t. obs"], [θ_box_term obs_box_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+                boxplot!(obj_plot, ["PB" "PB obs"], [θ_pb_term obs_pb_term], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+            end
+        elseif rel_to_pb == true
+            obj_plot = plot(ylabel="relative improvement %", title="BB infeasible")
+            if size(θ_box_term,1) > 0
+                boxplot!(obj_plot, ["Box t. $(length(θ_box_term))" "Box t. obs"], [(100 .*(θ_pb_term.-θ_box_term)./θ_pb_term) (100 .*(obs_pb_term.-obs_box_term)./obs_pb_term)], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
             end
         end
-        if length(θ_box_unterm) > 0
+        if size(θ_box_unterm,1) > 0
             if rel_to_pb == false
-                boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))"], [θ_box_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
-                boxplot!(obj_plot, ["PB"], [θ_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+                boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))" "Box unt. obs"], [θ_box_unterm obs_box_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+                boxplot!(obj_plot, ["PB" "PB obs"], [θ_pb_unterm obs_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
             elseif rel_to_pb == true
-                boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))"], [100 .*(θ_pb_unterm.-θ_box_unterm)./θ_pb_unterm], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+                boxplot!(obj_plot, ["Box unt. $(length(θ_box_unterm))" "Box unt. obs"], [(100 .*(θ_pb_unterm.-θ_box_unterm)./θ_pb_unterm) (100 .*(obs_pb_unterm.-obs_box_unterm)./obs_pb_unterm)], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
             end
         end
-        rel_to_pb ? savefig(obj_plot, "source/plots/termination/k$(k)_bb_infeasible_obj_rel_to_pb.pdf") : savefig(obj_plot, "source/plots/termination/k$(k)_bb_infeasible_obj.pdf")
+        rel_to_pb ? savefig(obj_plot, "source/plots/termination/k$(K)_bb_infeasible_obj_rel_to_pb.pdf") : savefig(obj_plot, "source/plots/termination/k$(K)_bb_infeasible_obj.pdf")
 
         time_box_term = plot_data[plot_data[!,:runtime_box] .<= 3600, :runtime_box]
         time_box_unterm = plot_data[plot_data[!,:runtime_box] .> 3600, :runtime_box]
@@ -337,12 +344,15 @@ function termination_plot_from_csv(filename::String; terminated="both", K=[2], r
                 linecolour= :match,
                 fillalpha = 0.4)
         end
-        savefig(time_plot, "source/plots/termination/k$(k)_bb_infeasible_time.pdf")
+        savefig(time_plot, "source/plots/termination/k$(K)_bb_infeasible_time.pdf")
     else
         
         θ_bb = plot_data[:, :θ_bb]
         θ_box = plot_data[:, :θ_box]
         θ_pb = plot_data[:, :θ_pb]
+        obs_bb = plot_data[:, :obs_bb]
+        obs_box = plot_data[:, :obs_box]
+        obs_pb = plot_data[:, :obs_pb]
         if nrow(plot_data) > 0
             if rel_to_pb == false
                 obj_plot_bb_box = plot(ylabel="objective", title="$(nrow(plot_data)) instances")
@@ -350,8 +360,8 @@ function termination_plot_from_csv(filename::String; terminated="both", K=[2], r
                 savefig(obj_plot_bb_box, "source/plots/termination/k$(k)_$(terminated)_terminate_obj.pdf")
             elseif rel_to_pb == true
                 obj_plot_bb_box = plot(ylabel="relative improvement %", title="$(nrow(plot_data)) instances")
-                boxplot!(obj_plot_bb_box, ["BB" "Box"], [(100 .*(θ_pb.-θ_bb)./θ_pb) (100 .*(θ_pb.-θ_box)./θ_pb)], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4) #TODO relative
-                savefig(obj_plot_bb_box, "source/plots/termination/k$(K)_$(terminated)_terminate_obj_rel.pdf")
+                boxplot!(obj_plot_bb_box, ["BB" "BB obs" "Box" "Box obs"], [(100 .*(θ_pb.-θ_bb)./θ_pb) (100 .*(obs_pb.-obs_bb)./obs_pb) (100 .*(θ_pb.-θ_box)./θ_pb) (100 .*(obs_pb.-obs_box)./obs_pb)], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4) #TODO relative
+                savefig(obj_plot_bb_box, "source/plots/termination/k$(K)_$(terminated)_terminate_obj_rel_obs.pdf")
             end
         end
 
@@ -378,26 +388,28 @@ end
 
     filename without .csv ending
 """
-function k_plot_from_csv(filename::String; method="box", relative=false)
+function k_plot_from_csv(filename::String; method="box", relative=false, observable=false)
 
     # extract data from file, remove lines with strings where bb is infeas
     alldata_dirty = DataFrame(CSV.File("$(filename).csv"))
     if method == "bb"
         # filter feasible ones
-        alldata = alldata_dirty[alldata_dirty[!,:it_bb] .!= "s",:]
+        alldata = alldata_dirty#[alldata_dirty[!,:it_bb] .!= "s",:]
         # alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
         # alldata[!,:θ_bb] = parse.(Float64, alldata[!,:θ_bb])
         term, unterm = split_time(alldata, "bb")
-        θ_key = :θ_bb
+        observable ? term = alldata : ()
+        observable ? (θ_key = :obs_bb) : (θ_key = :θ_bb)
         time_key = :runtime_bb
     elseif method == "box"
         alldata = alldata_dirty
         term, unterm = split_time(alldata, "box")
-        θ_key = :θ_box
+        observable ? term = alldata :
+        observable ? (θ_key = :obs_box) : (θ_key = :θ_box)
         time_key = :runtime_box
     elseif method == "pb"
         term = alldata_dirty
-        θ_key = :θ_pb
+        observable ? (θ_key = :obs_pb) : (θ_key = :θ_pb)
         time_key = :runtime_pb
     else
         error("method is invalid, must be one of bb, box, pb")
@@ -408,15 +420,15 @@ function k_plot_from_csv(filename::String; method="box", relative=false)
     term_k3 = term[term[!,:k] .== 3,:]
 
     term_is1 = semijoin(term_k1, term_k2, on = [:instance, :n, :m, :pc])
-    term_is1 = semijoin(term_k1, term_k3, on = [:instance, :n, :m, :pc])
+    term_is1 = semijoin(term_is1, term_k3, on = [:instance, :n, :m, :pc])
     sort!(term_is1, [:n, :m, :pc, :instance])
 
     term_is2 = semijoin(term_k2, term_k1, on = [:instance, :n, :m, :pc])
-    term_is2 = semijoin(term_k2, term_k3, on = [:instance, :n, :m, :pc])
+    term_is2 = semijoin(term_is2, term_k3, on = [:instance, :n, :m, :pc])
     sort!(term_is2, [:n, :m, :pc, :instance])
 
     term_is3 = semijoin(term_k3, term_k1, on = [:instance, :n, :m, :pc])
-    term_is3 = semijoin(term_k3, term_k2, on = [:instance, :n, :m, :pc])
+    term_is3 = semijoin(term_is3, term_k2, on = [:instance, :n, :m, :pc])
     sort!(term_is3, [:n, :m, :pc, :instance])
 
     if relative == true 
@@ -436,22 +448,23 @@ function k_plot_from_csv(filename::String; method="box", relative=false)
 
     boxplot!(obj_plot, ["k=1" "k=2" "k=3"], [θ1 θ2 θ3], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
     if relative == true 
-        savefig(obj_plot, "source/plots/k_comparison/relobj_k_$(method)_$(n_inst).pdf")
+        observable ? savefig(obj_plot, "source/plots/k_comparison/obsrelobj_k_$(method)_$(n_inst).pdf") : savefig(obj_plot, "source/plots/k_comparison/relobj_k_$(method)_$(n_inst).pdf")
     else 
-        savefig(obj_plot, "source/plots/k_comparison/obj_k_$(method)_$(n_inst).pdf")
+        observable ? savefig(obj_plot, "source/plots/k_comparison/obsobj_k_$(method)_$(n_inst).pdf") : savefig(obj_plot, "source/plots/k_comparison/obj_k_$(method)_$(n_inst).pdf")
     end
+    if observable == false 
+        t1 = term_is1[:, time_key]
+        t2 = term_is2[:, time_key]
+        t3 = term_is3[:, time_key]
+        time_plot = plot(ylabel="runtime")
+        boxplot!(time_plot, ["k=1" "k=2" "k=3"], [t1 t2 t3], 
+            leg=false, 
+            linewidth=2,
+            linecolour= :match,
+            fillalpha = 0.4)
 
-    t1 = term_is1[:, time_key]
-    t2 = term_is2[:, time_key]
-    t3 = term_is3[:, time_key]
-    time_plot = plot(ylabel="runtime")
-    boxplot!(time_plot, ["k=1" "k=2" "k=3"], [t1 t2 t3], 
-        leg=false, 
-        linewidth=2,
-        linecolour= :match,
-        fillalpha = 0.4)
-
-    savefig(time_plot, "source/plots/k_comparison/time_k_$(method)_$(n_inst).pdf")
+        savefig(time_plot, "source/plots/k_comparison/time_k_$(method)_$(n_inst).pdf")
+    end
     # combi = plot(obj_plot_bb_box, time_plot, layout=(1,2), legend=false)
     # savefig(combi, "$(filename)_boxplot.pdf")
 

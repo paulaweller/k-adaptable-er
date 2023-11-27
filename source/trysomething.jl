@@ -1,5 +1,7 @@
 using DataFrames, CSV
 
+include("simulate_solution.jl")
+
 function extract_results(no, mo, pco, ko)
     results = DataFrame()
     for n in no
@@ -58,9 +60,8 @@ function add_observables(no, mo, pco, ko)
     return observ
 end
 
-observ = add_observables([4,6,8], [10,15,20], [0.1,0.3], [1,2,3,4,5])
 results = DataFrame(CSV.File("source/results/all_batches/combined_results_all_batches.csv"))
 results = innerjoin(results, observ, on = [:n,:m,:k,:pc,:instance])
-    output = open("source/results/all_batches/combined_results_all_batches_obs.csv", "w")
-    CSV.write(output, results)
-    close(output)
+output = open("source/results/all_batches/combined_results_all_batches_obs.csv", "w")
+CSV.write(output, results)
+close(output)

@@ -1,6 +1,6 @@
 include("helpers_data.jl")
 
-using JuMP, Gurobi, BilevelJuMP
+using JuMP, Gurobi, BilevelJuMP, LinearAlgebra
 const GRB_ENV_bb = Gurobi.Env()
 
 function observable_worst_case_objectives(no, mo, pco, ko)

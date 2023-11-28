@@ -9,7 +9,7 @@ mo = [10,15,20]
 pco = [0.1]
 ko = [2]
 
-k_plot_from_csv(allfile, method="box", relative=true, observable=true)
+# k_plot_from_csv(allfile, method="box", relative=true, observable=true)
 
 # zetas, bbs, boxs = extract_evolutions(no, mo, pco, ko)
 # plot_evol(boxs, xlimits=[0,3600], relative=true, name="box_k2_0.1", last = true)

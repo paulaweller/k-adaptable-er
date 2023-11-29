@@ -67,5 +67,3 @@ output = open("source/results/all_batches/combined_results_all_batches_obs_k1.cs
 CSV.write(output, results)
 close(output)
 
-# awk '(NR == 1) || (FNR > 1)' results/all_batches/combined_results_all_batches_obs_*.csv > results/$FILE/combined_results_all_batches_obs.csv
-

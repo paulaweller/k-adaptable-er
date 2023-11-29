@@ -356,8 +356,8 @@ function termination_plot_from_csv(filename::String; terminated="both", K=[2], r
         if nrow(plot_data) > 0
             if rel_to_pb == false
                 obj_plot_bb_box = plot(ylabel="objective", title="$(nrow(plot_data)) instances")
-                boxplot!(obj_plot_bb_box, ["BB" "Box" "PB"], [θ_bb θ_box θ_pb], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4) #TODO relative
-                savefig(obj_plot_bb_box, "source/plots/termination/k$(k)_$(terminated)_terminate_obj.pdf")
+                boxplot!(obj_plot_bb_box, ["BB" "BB obs" "Box" "Box obs" "PB" "PB obs"], [θ_bb obs_bb θ_box obs_box θ_pb obs_pb], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4) #TODO relative
+                savefig(obj_plot_bb_box, "source/plots/termination/k$(K)_$(terminated)_terminate_obj.pdf")
             elseif rel_to_pb == true
                 obj_plot_bb_box = plot(ylabel="relative improvement %", title="$(nrow(plot_data)) instances")
                 boxplot!(obj_plot_bb_box, ["BB" "BB obs" "Box" "Box obs"], [(100 .*(θ_pb.-θ_bb)./θ_pb) (100 .*(obs_pb.-obs_bb)./obs_pb) (100 .*(θ_pb.-θ_box)./θ_pb) (100 .*(obs_pb.-obs_box)./obs_pb)], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4) #TODO relative
@@ -425,49 +425,62 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
     end
     # sort by k
     term_k1 = term[term[!,:k] .== 1,:]
-    @show size(term_k1)
     term_k2 = term[term[!,:k] .== 2,:]
-    @show size(term_k2)
     term_k3 = term[term[!,:k] .== 3,:]
-    @show size(term_k3)
 
     if observable 
         term_is1 = term_k1
         term_is2 = term_k2
         term_is3 = term_k3
+        term_is4 = term[term[!,:k] .== 4,:]
+        term_is5 = term[term[!,:k] .== 5,:]
         sort!(term_is1, [:n, :m, :pc, :instance])
         sort!(term_is2, [:n, :m, :pc, :instance])
         sort!(term_is3, [:n, :m, :pc, :instance])
+        sort!(term_is4, [:n, :m, :pc, :instance])
+        sort!(term_is5, [:n, :m, :pc, :instance])
     else
         term_is1 = semijoin(term_k1, term_k2, on = [:instance, :n, :m, :pc])
         term_is1 = semijoin(term_is1, term_k3, on = [:instance, :n, :m, :pc])
         sort!(term_is1, [:n, :m, :pc, :instance])
 
-        #term_is2 = semijoin(term_k2, term_k1, on = [:instance, :n, :m, :pc])
+        term_is2 = semijoin(term_k2, term_k1, on = [:instance, :n, :m, :pc])
         term_is2 = semijoin(term_is2, term_k3, on = [:instance, :n, :m, :pc])
         sort!(term_is2, [:n, :m, :pc, :instance])
 
-        #term_is3 = semijoin(term_k3, term_k1, on = [:instance, :n, :m, :pc])
+        term_is3 = semijoin(term_k3, term_k1, on = [:instance, :n, :m, :pc])
         term_is3 = semijoin(term_is3, term_k2, on = [:instance, :n, :m, :pc])
         sort!(term_is3, [:n, :m, :pc, :instance])
     end
 
     if relative == true 
         obj_plot = plot(ylabel="relative improvement of objective")
-        #θ1 = 100 .*(1 .- term_is1[:, θ_key]./term_is1[:, θ_key])
-        θ2 = 100 .*(1 .- term_is2[:, θ_key]./term_is2[:, :θ_pb])
-        θ3 = 100 .*(1 .- term_is3[:, θ_key]./term_is3[:, :θ_pb])
+        θ1 = 100 .*(1 .- term_is1[:, θ_key]./term_is1[:, θ_key])
+        θ2 = 100 .*(1 .- term_is2[:, θ_key]./term_is1[:, θ_key])
+        θ3 = 100 .*(1 .- term_is3[:, θ_key]./term_is1[:, θ_key])
+        if observable == true
+            θ4 = 100 .*(1 .- term_is4[:, θ_key]./term_is1[:, θ_key])
+            θ5 = 100 .*(1 .- term_is5[:, θ_key]./term_is1[:, θ_key])
+        end
     elseif relative == false
         obj_plot = plot(ylabel="objective")
-        #θ1 = term_is1[:, θ_key]
+        θ1 = term_is1[:, θ_key]
         θ2 = term_is2[:, θ_key]
         θ3 = term_is3[:, θ_key]
+        if observable == true
+            θ4 = term_is4[:, θ_key]
+            θ5 = term_is5[:, θ_key]
+        end
     else 
         error("value for relative is invalid")
     end
     n_inst = length(θ2)
 
-    boxplot!(obj_plot, ["k=2" "k=3"], [θ2 θ3], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+    if observable
+        boxplot!(obj_plot, ["k=1" "k=2" "k=3" "k=4" "k=5"], [θ1 θ2 θ3 θ4 θ5], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+    else
+        boxplot!(obj_plot, ["k=1" "k=2" "k=3"], [θ1 θ2 θ3], leg=false, linewidth=2,linecolour= :match,fillalpha = 0.4)
+    end
     if relative == true 
         observable ? savefig(obj_plot, "source/plots/k_comparison/obsrelobj_k_$(method)_$(n_inst).pdf") : savefig(obj_plot, "source/plots/k_comparison/relobj_k_$(method)_$(n_inst).pdf")
     else 

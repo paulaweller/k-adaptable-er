@@ -4,23 +4,18 @@ include("helpers_plot.jl")
 
 allfile = "source/results/all_batches/combined_results_all_batches_obs"
 
-no = [4,6,8]
-mo = [10,15,20]
-pco = [0.1]
-ko = [2]
+k_plot_from_csv(allfile, method="box", relative=false, observable=false)
 
-k_plot_from_csv(allfile, method="bb", relative=true, observable=true)
-
-# zetas, bbs, boxs = extract_evolutions(no, mo, pco, ko)
-# plot_evol(boxs, xlimits=[0,3600], relative=true, name="box_k2_0.1", last = true)
+# zetas, bbs, boxs = extract_evolutions([4,6,8], [10,15,20], [0.1,0.3], [2])
+# plot_evol(boxs, allfile, xlimits=[0,3600], relative=true, name="box_k2", last = true)
 
 # plot_pc_vs_time(allfile, time=true, objective=true)
 
-# plot_size_vs_time(allfile, percentage=0.1, K=[2])
+#plot_size_vs_time(allfile, percentage=0.1, K=[1,2])
 
-# plot_zeta_distr_from_csv(allfile, status="unterminated", n_interval=200, relative=false, K=[3,4,5])
+# plot_zeta_distr_from_csv(allfile, status="terminated", n_interval=300, relative=false, K=[1,2,3])
 
-# termination_plot_from_csv(allfile, terminated = "bb_infeas", K=[2], rel_to_pb=false)
+# termination_plot_from_csv(allfile, terminated = "neither", K=[1,2,3,4,5], rel_to_pb=false)
 
 
 # for k in ko

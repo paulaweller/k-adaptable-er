@@ -280,21 +280,31 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
         time_plot = plot(ylabel="runtime",palette=cp)
         violin!(time_plot, ["k=1" "k=2" "k=3"], [t1 t2 t3], 
             leg=false, 
+            xtickfontsize=12,
+            ytickfontsize=12,
+            xguidefontsize=14,
+            yguidefontsize=14,
             linewidth=2,
             linecolour= :match,
             markerstrokewidth=0,
-            color=[cp[6] cp[7] cp[8]],
+            color=[cp[1] cp[2] cp[3]],
             fillalpha = 0.4,palette=cp)
 
         savefig(time_plot, "source/plots/k_comparison/violin_time_k_$(method)_all.pdf")
+        # xtickfontsize=18,
+        # ytickfontsize=18,
+        # xguidefontsize=18,
+        # yguidefontsize=18,
+        # legendfontsize=18
     end
     # combi = plot(obj_plot_bb_box, time_plot, layout=(1,2), legend=false)
     # savefig(combi, "$(filename)_boxplot.pdf")
 
 end
 
-function plot_pc_vs_time(filename; time=false, objective=false)
-    alldata = DataFrame(CSV.File("$(filename).csv"))
+function plot_pc_vs_time(filename; time=false, objective=false, K=[1,2,3,4,5])
+    alldata_all = DataFrame(CSV.File("$(filename).csv"))
+    alldata = alldata_all[in.(alldata_all[!,:k],(K,)),:]
     cp = palette(:Set1_6)
     # replace!(alldata.runtime_bb, "i" => "3600.0")
     # alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
@@ -320,7 +330,7 @@ function plot_pc_vs_time(filename; time=false, objective=false)
                 fillalpha = 0.4)
 
         cplot = plot(time_plot1, time_plot3, ylabel="runtime")
-        savefig(cplot, "source/plots/percentage/pc_time.pdf")
+        savefig(cplot, "source/plots/percentage/pc_time_$(K).pdf")
     end
     if objective == true
         alldata_clean = alldata[alldata[!,:θ_bb] .!= 1e20,:]

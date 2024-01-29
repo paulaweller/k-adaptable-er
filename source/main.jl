@@ -1,15 +1,16 @@
-include("helpers_data.jl")
-include("simulate_solution.jl")
-include("helpers_plot.jl")
+#include("helpers_data.jl")
+#include("simulate_solution.jl")
+#include("helpers_plot.jl")
 
-allfile = "source/results/all_batches/combined_results_all_batches_obs"
+using Gurobi, JuMP
+#allfile = "source/results/all_batches/combined_results_all_batches_obs"
 
-k_plot_from_csv(allfile, method="box", relative=false, observable=false)
+#k_plot_from_csv(allfile, method="bb", relative=false, observable=false)
 
 # zetas, bbs, boxs = extract_evolutions([4,6,8], [10,15,20], [0.1,0.3], [2])
 # plot_evol(boxs, allfile, xlimits=[0,3600], relative=true, name="box_k2", last = true)
 
-# plot_pc_vs_time(allfile, time=true, objective=true)
+# plot_pc_vs_time(allfile, time=true, objective=false, K=[2])
 
 #plot_size_vs_time(allfile, percentage=0.1, K=[1,2])
 
@@ -33,3 +34,11 @@ k_plot_from_csv(allfile, method="box", relative=false, observable=false)
 #         observable_plot(o_pb,o_bb,o_box,oo_pb, oo_box,k,pc,rel=false)
 #     end
 # end
+
+m = Model(() -> Gurobi.Optimizer())
+
+@variable(m, x>= 0)
+@objective(m, Min, x)
+
+optimize!(m)
+    

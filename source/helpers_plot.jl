@@ -176,7 +176,10 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
 
     # extract data from file, remove lines with strings where bb is infeas
     alldata_dirty = DataFrame(CSV.File("$(filename).csv"))
+    cp = palette(:Set1_3,15)
     if method == "bb"
+        color5 = [cp[1] cp[2] cp[3] cp[4] cp[5]]
+        color3 = [cp[1] cp[2] cp[3]]
         # filter feasible ones
         alldata = alldata_dirty#[alldata_dirty[!,:it_bb] .!= "s",:]
         # alldata[!,:runtime_bb] = parse.(Float64, alldata[!,:runtime_bb])
@@ -191,6 +194,8 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
         
         time_key = :runtime_bb
     elseif method == "box"
+        color5 = [cp[6] cp[7] cp[8] cp[9] cp[10]]
+        color3 = [cp[6] cp[7] cp[8]]
         alldata = alldata_dirty
         if observable
             term = alldata
@@ -201,6 +206,8 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
         end
         time_key = :runtime_box
     elseif method == "pb"
+        color5 = [cp[11] cp[12] cp[13] cp[14] cp[15]]
+        color3 = [cp[13] cp[14] cp[15]]
         term = alldata_dirty
         observable ? (θ_key = :obs_pb) : (θ_key = :θ_pb)
         time_key = :runtime_pb
@@ -236,7 +243,6 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
         term_is3 = semijoin(term_is3, term_k2, on = [:instance, :n, :m, :pc])
         sort!(term_is3, [:n, :m, :pc, :instance])
     end
-    cp = palette(:Set1_3,15)
     if relative == true 
         obj_plot = plot(ylabel="relative improvement of objective",palette=cp)
         θ1 = 100 .*(1 .- term_is1[:, θ_key]./term_is1[:, θ_key])
@@ -261,12 +267,12 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
     n_inst = length(θ2)
 
     if observable
-        boxplot!(obj_plot, ["k=1" "k=2" "k=3" "k=4" "k=5"], [θ1 θ2 θ3 θ4 θ5], 
-        color=[cp[10] cp[9] cp[8] cp[7] cp[6]],
+        boxplot!(obj_plot, ["K=1" "K=2" "K=3" "K=4" "K=5"], [θ1 θ2 θ3 θ4 θ5], 
+        color=color5,
         leg=false, linewidth=2,linecolour= :match,markerstrokewidth=0,markeropacity=1,fillalpha = 0.4, ylims=(-15,60))
     else
-        boxplot!(obj_plot, ["k=1" "k=2" "k=3"], [θ1 θ2 θ3], 
-        leg=false, linewidth=2,linecolour= :match,markerstrokewidth=0,fillalpha = 0.4)
+        boxplot!(obj_plot, ["K=1" "K=2" "K=3"], [θ1 θ2 θ3], 
+        color=color3,leg=false, linewidth=2,linecolour= :match,markerstrokewidth=0,fillalpha = 0.4)
     end
     if relative == true 
         observable ? savefig(obj_plot, "source/plots/k_comparison/k_evol_obsrelobj_k_$(method)_$(n_inst).pdf") : savefig(obj_plot, "source/plots/k_comparison/relobj_k_$(method)_$(n_inst).pdf")
@@ -278,7 +284,7 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
         t2 = alldata[alldata[!,:k] .== 2, time_key]##term_is2[:, time_key]
         t3 = alldata[alldata[!,:k] .== 3, time_key]##term_is3[:, time_key]
         time_plot = plot(ylabel="runtime",palette=cp)
-        violin!(time_plot, ["k=1" "k=2" "k=3"], [t1 t2 t3], 
+        violin!(time_plot, ["K=1" "K=2" "K=3"], [t1 t2 t3], 
             leg=false, 
             xtickfontsize=12,
             ytickfontsize=12,
@@ -287,7 +293,7 @@ function k_plot_from_csv(filename::String; method="box", relative=false, observa
             linewidth=2,
             linecolour= :match,
             markerstrokewidth=0,
-            color=[cp[1] cp[2] cp[3]],
+            color=color3,
             fillalpha = 0.4,palette=cp)
 
         savefig(time_plot, "source/plots/k_comparison/violin_time_k_$(method)_all.pdf")
@@ -378,7 +384,7 @@ function plot_evol(zetas, filename; xlimits=[0,3600], relative=true, name="zeta"
     df = DataFrame(CSV.File("$(filename).csv"))
     for (key, values) in zetas
         # key is [n,m,pc,k,l]
-        @show pb = df[ ( df.n .== key[1] ) .& ( df.m .== key[2] ) .& (df.pc .== key[3]) .& (df.k .== key[4]) .& (df.instance .== key[5]), :θ_pb]
+        pb = df[ ( df.n .== key[1] ) .& ( df.m .== key[2] ) .& (df.pc .== key[3]) .& (df.k .== key[4]) .& (df.instance .== key[5]), :θ_pb]
 
         # Extract x and y coordinates from each 2D vector
         if length(values) > 1 && values != "Vector{Float64}[]"
@@ -401,7 +407,7 @@ function plot_evol(zetas, filename; xlimits=[0,3600], relative=true, name="zeta"
             end
             # Plot the data
             plot!(time_plot, x_vals[1:(end)], y_vals[1:(end)], 
-            label="",line = (0.1,1), color=mycolor, ylims=(0,0.4))
+            label="",line = (0.1,1), color=mycolor, ylims=(0,0.4),xlabel="seconds",ylabel="objective improvement relative to PB")
         end
     end
     if last == true
@@ -472,7 +478,7 @@ end
 number_in_interval(lb, rb, zetas) = count(i-> ((i <= rb) && (i > lb)), zetas)
 
 
-function plot_size_vs_time(filename; percentage=0.1, K=[2])
+function plot_size_vs_time(filename; K=[2])
     alldata = DataFrame(CSV.File("$(filename).csv"))
 
     # replace!(alldata.runtime_bb, "i" => "3600.0")
@@ -497,7 +503,7 @@ function plot_size_vs_time(filename; percentage=0.1, K=[2])
             data_n = data[data[!,:n] .== n,:]
             data_m = data_n[data_n[!,:m] .== m,:]
             data_k = data_m[in.(data_m[!,:k],(K,)),:]
-            violin!(time_plot, ["bb" "box"], [data_k[:,:runtime_bb] data_k[:,:runtime_box]], 
+            violin!(time_plot, ["BB" "Box"], [data_k[:,:runtime_bb] data_k[:,:runtime_box]], 
                 leg=false, linewidth=2,linecolour= :match,markerstrokewidth=0,fillalpha = 0.4,palette=cp)
             push!(plots, time_plot)
         end

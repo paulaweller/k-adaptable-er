@@ -10,6 +10,7 @@ Instance of the supply preallocation problem where
     W     = aggregated supply bound
     D     = maximal demand at one location
     pc    = percentage of affected quantities at risk
+    dist  = distances between i and j
 """
 struct AllocationInstance
     loc_I::Array{Float64,2}
@@ -17,7 +18,10 @@ struct AllocationInstance
     W::Float64
     D::Vector{Float64}
     pc::Float64
+    dist::Array{Float64,2}
 end
+
+AllocationInstance(loc_I,loc_J,W,D,pc) = AllocationInstance(loc_I,loc_J,W,D,pc,[norm(i-j) for i in eachcol(loc_I), j in eachcol(loc_J)])
 
 """
     print_instance(instance)

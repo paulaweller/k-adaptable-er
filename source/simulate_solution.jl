@@ -143,11 +143,12 @@ function solve_worst_case_objective(y, inst::AllocationInstance)
 
     loc_I = inst.loc_I
     loc_J = inst.loc_J
-    I = size(loc_I, 2)
-    J = size(loc_J, 2)
+    I = size(inst.dist, 1)
+    J = size(inst.dist, 2)
     W = inst.W
     D = inst.D
     pc = inst.pc
+    dist = inst.dist
     D_max = max(D...)
     K = size(y, 3)
 
@@ -160,8 +161,10 @@ function solve_worst_case_objective(y, inst::AllocationInstance)
     # d must be in the uncertainty set
     @constraint(Upper(m), [j=1:J], d[j] <= D[j])
     @constraint(Upper(m), sum(d[j] for j in 1:J) <= floor(pc*sum(D)))   # bound on aggregated demand
-    for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
-        @constraint(Upper(m), d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
+    if isempty(loc_J) == false
+        for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
+            @constraint(Upper(m), d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
+        end
     end
 
     # available second-stage policies
@@ -172,8 +175,7 @@ function solve_worst_case_objective(y, inst::AllocationInstance)
 
     ########## lower model
 
-    @expression(Lower(m), c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
-    @expression(Lower(m), slack_coeff, 1000.0*norm(c,Inf))              # coefficient for slack variables in objective
+    @expression(Lower(m), slack_coeff, 1000.0*norm(dist,Inf))              # coefficient for slack variables in objective
 
 
     @variable(Lower(m), 0 <= obj <= 1e10)                        # The objective function will be the minimum of the objective function across all the policies
@@ -181,7 +183,7 @@ function solve_worst_case_objective(y, inst::AllocationInstance)
     @variable(Lower(m), 0 <= s[1:J, 1:K]<= D_max)                # Unsatisfied demand
 
     # Constrain objective function for each policy
-    @constraint(Lower(m),[k=1:K], z[k] == slack_coeff*sum(s[j,k] for j in 1:J) + sum(c[i,j]*q[i,j,k] for i in 1:I, j in 1:J))
+    @constraint(Lower(m),[k=1:K], z[k] == slack_coeff*sum(s[j,k] for j in 1:J) + sum(dist[i,j]*q[i,j,k] for i in 1:I, j in 1:J))
     # Final objective is the most beneficial policy
     @constraint(Lower(m), [k=1:K], obj <= z[k])
 

@@ -17,8 +17,7 @@ function run_instance(k::Int64, problem_instance::AllocationInstance; tlim=250.0
     println("\n")
     if pb==true
         # how many iterations are necessary for a k-adaptable solution?
-        loc_J = problem_instance.loc_J
-        J = size(loc_J, 2)
+        J = size(problem_instance.dist, 2)
         it = round(Int, 1 + (k-1)/(J-1))
         # run partition-and-bound method
         println("Starting partition-and-bound...")

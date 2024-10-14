@@ -29,8 +29,8 @@ AllocationInstance(loc_I,loc_J,W,D,pc) = AllocationInstance(loc_I,loc_J,W,D,pc,[
 Print instance data.
 """
 function print_instance(inst; all=false)
-    I = size(inst.loc_I, 2)
-    J = size(inst.loc_J, 2)
+    I = size(inst.dist, 1)
+    J = size(inst.dist, 2)
     s_locations = [(inst.loc_I[1,i], inst.loc_I[2,i]) for i in 1:I]
     d_locations = [(inst.loc_J[1,j], inst.loc_J[2,j]) for j in 1:J]
     println("Instance data:")

@@ -54,8 +54,9 @@ Build the scenario-based K_adaptable problem.
 function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     loc_I = inst.loc_I
     loc_J = inst.loc_J
-    I = size(loc_I, 2)
-    J = size(loc_J, 2)
+    dist = inst.dist
+    I = size(dist, 1)
+    J = size(dist, 2)
     D = inst.D
     D_max = max(D...)
     W = inst.W
@@ -66,8 +67,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
     set_optimizer_attribute(rm, "Threads", 8)
 
-    @expression(rm, c[i=1:I,j=1:J], norm(loc_I[:,i]-loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 1000.0*norm(c,Inf))                  # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 1000.0*norm(dist,Inf))                  # coefficient for slack variables in objective
 
     @variable(rm, 0 <= w[1:I] <= W, Int)            # first-stage decision
     @variable(rm, 0 <= q[1:I,1:J,1:K] <= W, Int)    # Second stage, wait-and-see decision how to distribute and slack
@@ -83,7 +83,7 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     @objective(rm, Min, obj)
         
     # Constrain objective function for this cell
-    @constraint(rm, [k=1:K], z[k] >= slack_coeff*sum(s[j,k] for j in 1:J) + sum(c[i,j]*q[i,j,k] for i in 1:I, j in 1:J))
+    @constraint(rm, [k=1:K], z[k] >= slack_coeff*sum(s[j,k] for j in 1:J) + sum(dist[i,j]*q[i,j,k] for i in 1:I, j in 1:J))
     @constraint(rm, [k=1:K], obj >= z[k])
 
     # Demand 
@@ -129,7 +129,8 @@ end
 function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_value::Array{Float64,2})
 
     loc_J = inst.loc_J
-    J = size(loc_J, 2)
+    dist = inst.dist
+    J = size(dist, 2)
     D = inst.D
     D_max = max(D...)
     pc = inst.pc
@@ -148,8 +149,10 @@ function build_separation_problem_box(inst::AllocationInstance, K::Int64, ξ_val
 
     # d must be in the uncertainty set
     @constraint(us, sum(d[j] for j in 1:J) <= floor(pc*sum(D)))   # bound on aggregated demand
-    for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
-        @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
+    if isempty(loc_J) == false
+        for (j2,j1) in Iterators.product(1:J,1:J)   # clustering of demand
+            @constraint(us, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
+        end
     end
 
     @expression(us, M, 2*D_max+1)

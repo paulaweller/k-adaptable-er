@@ -28,8 +28,9 @@ tree given the new scenarios obtained.
 """
 function solve_partitioned_problem(inst::AllocationInstance, scenario_tree::Vector{TreeScenario}, time_start, time_limit)
 
-    I = size(inst.loc_I, 2)
-    J = size(inst.loc_J, 2)
+    dist = inst.dist
+    I = size(dist, 1)
+    J = size(dist, 2)
 
     D = inst.D
     D_max = max(D...)
@@ -46,8 +47,7 @@ function solve_partitioned_problem(inst::AllocationInstance, scenario_tree::Vect
     set_optimizer_attribute(rm, "MIPGap", 1e-3) # set gap to 0.1% (default is 1e-4)
     set_optimizer_attribute(rm, "Threads", 8)
 
-    @expression(rm, c[i=1:I,j=1:J], norm(inst.loc_I[:,i]-inst.loc_J[:,j])); # transportation costs
-    @expression(rm, slack_coeff, 1000.0*norm(c,Inf))                  # coefficient for slack variables in objective
+    @expression(rm, slack_coeff, 1000.0*norm(dist,Inf))                  # coefficient for slack variables in objective
 
     # Decision variables:
     # First stage, here-and-now decision where to store supplies
@@ -68,7 +68,7 @@ function solve_partitioned_problem(inst::AllocationInstance, scenario_tree::Vect
     @objective(rm, Min, obj+0.1*sum(z[i] for i in 1:P))
 
     # Constrain objective function for cells
-    @constraint(rm, [p=1:P], z[p] >= slack_coeff*sum(s[j,p] for j in 1:J) + sum(c[i,j]*q[i,j,p] for i in 1:I, j in 1:J))
+    @constraint(rm, [p=1:P], z[p] >= slack_coeff*sum(s[j,p] for j in 1:J) + sum(dist[i,j]*q[i,j,p] for i in 1:I, j in 1:J))
     @constraint(rm, [p=1:P], obj >= z[p])
 
     # service point limit
@@ -82,7 +82,7 @@ function solve_partitioned_problem(inst::AllocationInstance, scenario_tree::Vect
         s_val = callback_value.(cb_data, s)
         for p in 1:P
             for j in 1:J
-                d_val, d_scenario = solve_sep(p, j, inst.pc, inst.D, inst.loc_J, leaf_scenarios, time_start, time_limit)
+                d_val, d_scenario = solve_sep(p, j, inst.pc, inst.D, inst.loc_J, J, leaf_scenarios, time_start, time_limit)
                 push!(worst_case_scenarios, d_scenario)
                 if sum(y_val[i,j,p] for i in 1:I)+s_val[j,p] < d_val
                     con = @build_constraint(sum(q[i,j,p] for i in 1:I)+s[j,p] >= d_val)
@@ -126,8 +126,8 @@ end
     solve_sep(p, dn, pc, D, loc_J, scenario_tree)
 Solve the separation problem for cell p and demand node dn. Returns worst-case d[dn] and d.
 """
-function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Vector{Float64}, loc_J::Matrix{Float64}, scenario_tree, time_start, time_limit)
-    J = size(loc_J,2)
+function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Vector{Float64}, loc_J::Matrix{Float64}, J, scenario_tree, time_start, time_limit)
+
     leaf_scenarios = filter(is_leaf, scenario_tree)
     # Define the separation model
     sm = Model(() -> Gurobi.Optimizer(GRB_ENV_pb); add_bridges = false)
@@ -141,14 +141,15 @@ function solve_sep(p::Int64, dn::Int64, pc::Float64, D::Vector{Float64}, loc_J::
     # bound on aggregated demand
     @constraint(sm, sum(d[j] for j in 1:J) <= floor(pc*sum(D)))
 
-    # for each pair of demand points, add constraint that if locations are close, demand values must be close, too
-    for j2 in 1:J
-        for j1 in j2+1:J
-            @constraint(sm, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
-            @constraint(sm, d[j2]-d[j1] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
+    # if locations are given, for each pair of demand points, add constraint that if locations are close, demand values must be close, too
+    if isempty(loc_J) == false
+        for j2 in 1:J
+            for j1 in j2+1:J
+                @constraint(sm, d[j1]-d[j2] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
+                @constraint(sm, d[j2]-d[j1] <= norm(loc_J[:,j1]-loc_J[:,j2],Inf))
+            end
         end
     end
-
     # We define multiple hyperplanes by walking up the scenario tree from this leaf.
     current_scenario = leaf_scenarios[p]
     parent_scenario = current_scenario.parent

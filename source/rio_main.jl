@@ -1,3 +1,6 @@
+import Pkg
+Pkg.resolve()
+
 include("helpers_data.jl")
 include("helpers_solve.jl")
 

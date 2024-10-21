@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --time=04:20:00
-#SBATCH --mem=2G
+#SBATCH --mem=16G
 #SBATCH --cpus-per-task=8
 #SBATCH --output=output_rio/rio_array_%A_%a.out
 #SBATCH --array=1

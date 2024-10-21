@@ -4,8 +4,9 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --output=output_rio/rio_array_%A_%a.out
 #SBATCH --array=1-5
-# 
-export PRODUCT="Food"
+
+# supply product: Food, Water, Hygiene, Cleaning, Mattress, Medicine
+export PRODUCT="Water"
 # k
 export K=$SLURM_ARRAY_TASK_ID
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}

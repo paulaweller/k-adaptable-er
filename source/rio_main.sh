@@ -2,7 +2,7 @@
 #SBATCH --time=04:20:00
 #SBATCH --mem=2G
 #SBATCH --cpus-per-task=8
-#SBATCH --output=output/rio_array_%A_%a.out
+#SBATCH --output=output_rio/rio_array_%A_%a.out
 #SBATCH --array=1-5
 # 
 export PRODUCT="Food"

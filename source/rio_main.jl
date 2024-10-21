@@ -1,5 +1,3 @@
-import Pkg
-Pkg.instantiate()
 include("helpers_data.jl")
 include("helpers_solve.jl")
 

@@ -6,7 +6,7 @@
 #SBATCH --array=1-5
 
 # supply product: Food, Water, Hygiene, Cleaning, Mattress, Medicine
-export PRODUCT="Hygiene"
+export PRODUCT="Cleaning"
 # k
 export K=$SLURM_ARRAY_TASK_ID
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}

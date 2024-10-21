@@ -5,7 +5,7 @@ include("helpers_data.jl")
 include("helpers_solve.jl")
 
 k = parse(Int64, ARGS[1]) 
-product = parse(String, ARGS[2]) # supply product
+product = ARGS[2] # supply product
 lim = 7200.0         # runtime limit in seconds
 
 # supplies

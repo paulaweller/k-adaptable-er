@@ -1,4 +1,5 @@
 import Pkg
+Pkg.rm("BilevelJuMP")
 Pkg.instantiate()
 include("helpers_data.jl")
 include("helpers_solve.jl")

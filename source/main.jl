@@ -2,9 +2,9 @@ include("helpers_data.jl")
 include("simulate_solution.jl")
 include("helpers_plot.jl")
 
-allfile = "source/results/all_batches/combined_results_all_batches_obs"
+#allfile = "source/results/all_batches/combined_results_all_batches_obs"
 
-k_plot_from_csv(allfile, method="box", relative=true, observable=true)
+#k_plot_from_csv(allfile, method="box", relative=true, observable=true)
 
 # zetas, bbs, boxs = extract_evolutions([4,6,8], [10,15,20], [0.1,0.3], [2])
 # plot_evol(boxs, allfile, xlimits=[0,3600], relative=true, name="box_k2", last = true)
@@ -34,4 +34,20 @@ k_plot_from_csv(allfile, method="box", relative=true, observable=true)
 #         observable_plot(o_pb,o_bb,o_box,oo_pb, oo_box,k,pc,rel=false)
 #     end
 # end
-    
+
+ko = [1,2,3,4,5]
+supplies = ["Food", "Water", "Hygiene", "Cleaning", "Mattress", "Medicine"]
+for k in ko
+    for s in supplies
+        println("Solving k = $k, $s")
+        o_pb, o_bb, o_box, oo_pb, oo_box = observable_worst_case_objectives(no, mo, pc, k)
+        observables = Dict(
+            :o_bb => o_bb, 
+            :o_box => o_box)
+        observable_data = DataFrame(observables)
+        write_result_to_file("source/results/rio/observables_$(s)_k$(k).csv", observable_data)
+
+        # observable_plot(o_pb,o_bb,o_box,oo_pb, oo_box,k,pc,rel=true)
+        # observable_plot(o_pb,o_bb,o_box,oo_pb, oo_box,k,pc,rel=false)
+    end
+end

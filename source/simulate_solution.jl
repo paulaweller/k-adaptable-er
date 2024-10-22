@@ -51,6 +51,53 @@ function observable_worst_case_objectives(no, mo, pco, ko)
     return obj
 end
 
+function observable_worst_case_objectives(ko::Int64, supplies)
+
+    bb, box = extract_solutions(ko::Int64, supplies)
+
+    obj = DataFrame()
+    obj_bb = Dict()
+    obj_box = Dict()
+    for (key, values) in bb
+        # Extract x and y coordinates from each 2D vector
+        
+        val_bb = bb[key]
+        val_box = box[key]
+
+        # key is [supply, k]   
+        k = key[2]
+        s = key[1]
+        n = 4
+        m = 9
+        inst = read_rio_instance(s)
+        # if mod(l,10) == 0
+            # println("solving ", key)
+        # end
+
+        if val_bb == "n"
+            error("bb has a string entry")
+        elseif val_bb =='n'  
+            error("bb has a char value")
+        else
+            # pb is just the static solution
+            y_val_pb = arrayfromstr(val_bb,n,m,1)
+            y_val_bb = arrayfromstr(val_bb, n,m,k)
+            y_val_box = arrayfromstr(val_box,n,m,k)
+            # println("\n pb...")
+            theta_pb = solve_worst_case_objective(y_val_pb, inst)
+            # println("\n bb...")
+            theta_bb = solve_worst_case_objective(y_val_bb, inst)
+            # println("\n box...")
+            theta_box = solve_worst_case_objective(y_val_box, inst)
+            df_temp = DataFrame(supply = [s], k = [k], obs_pb = [theta_pb], obs_bb = [theta_bb], obs_box = [theta_box])
+
+            obj = vcat(obj, df_temp)
+        end
+        
+    end
+    return obj
+end
+
 function arrayfromstr(str, n, m, k)
     final = zeros(convert(Int,n),convert(Int,m),convert(Int,k))
     # split by k
@@ -124,6 +171,41 @@ function extract_solutions(no, mo, pco, ko)
         end
     end
     return y_pb, y_bb, y_box
+end
+
+"""
+    extract_solutions(ko, supplies)
+
+Returns a dictionary of the y-values of all solutions available for k in ko and supply in supplies for the rio-example.
+"""
+function extract_solutions(ko, supplies)
+
+    y_bb = Dict()
+    y_box = Dict()
+
+    for supply in supplies
+        for k in ko
+
+            # Specify the directory path
+            directory_path = "source/results/rio/$(supply)/individual"
+            # Specify the common beginning of the filename
+            common_prefix = "sol_rio_$(supply)_k$(k)"
+
+            # Get a list of files in the directory that match the pattern
+            files = filter(x -> occursin(common_prefix, x), readdir(directory_path))
+            for file in files
+
+                dict = read_solutions_from_file("$(directory_path)/$(file)")
+
+                dict_bb = Dict([supply,k] => dict["y_bb"])
+                dict_box = Dict([supply,k] => dict["y_box"])
+
+                merge!(y_bb, dict_bb)
+                merge!(y_box, dict_box)
+            end
+        end
+    end
+    return y_bb, y_box
 end
 
 function read_instance_for_param(n,m,pc,l)

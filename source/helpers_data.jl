@@ -190,6 +190,31 @@ function read_one_instance_from_file(line::Int64, filename::String)
     return instance
 end
 
+function read_rio_instance(product::String)
+
+    # supplies
+    W_df = CSV.read("data/rio_supplies.csv", DataFrame)
+    W = W_df[W_df[!,1].=="persons total", product][1]
+
+    # demand bound per location
+    D_df = CSV.read("data/rio_demand.csv", DataFrame)
+    max_pc_per_area = 0.3679
+    D = D_df[D_df[!,1].!="Total", "Population"].*max_pc_per_area
+
+    # percentage for aggregate demand bound
+    pc_overall = 0.1096
+
+    # distances between supply and demand points
+    dist_df = CSV.read("data/rio_dist.csv", DataFrame)
+    dist = Array(dist_df[!,2:end])
+
+    # empty set of locations
+    loc = Array{Float64}(undef, 0, 0)
+
+    instance = AllocationInstance(loc,loc,W,D,pc_overall,dist)
+    return instance
+end
+
 function write_result_to_file(filename::String, data::DataFrame)
     output = open(filename, "w")
     CSV.write(output, data)

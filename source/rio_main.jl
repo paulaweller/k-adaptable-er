@@ -31,7 +31,7 @@ instance = AllocationInstance(loc,loc,W,D,pc_overall,dist)
 
 # # save_x = eval(mod(l, 10) == 0)
 save_x = true
-results, solutions = run_instance(k, instance, tlim=lim, return_solutions=save_x)
+results, solutions = run_instance(k, instance, tlim=lim, return_solutions=save_x, pb=false)
 
 # add line/instance number to results
 # linedict = Dict(:instance => l)

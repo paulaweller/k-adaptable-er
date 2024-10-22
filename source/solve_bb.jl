@@ -115,8 +115,8 @@ function solve_scenario_based(tau::Vector{Vector{Vector{Float64}}}, inst::Alloca
     @constraint(rm, sum(w[i] for i in 1:I) <= W)                    # supply limit
     @constraint(rm, [i=1:I,k=1:K], sum(q[i,j,k] for j in 1:J) <= w[i])    # service point limit
         
-    @variable(rm, 0 <= obj <= 1e10)                        # The objective function will be the maximum of the objective function across all the cells
-    @variable(rm, 0<= z[1:K]<=1e10)                        # A variable to track each cells objective value
+    @variable(rm, 0 <= obj)                        # The objective function will be the maximum of the objective function across all the cells
+    @variable(rm, 0<= z[1:K])                        # A variable to track each cells objective value
     @objective(rm, Min, obj)
 
     for k in 1:K

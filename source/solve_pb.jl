@@ -61,9 +61,9 @@ function solve_partitioned_problem(inst::AllocationInstance, scenario_tree::Vect
     # The objective function will be the maximum of the objective function
     # across all the cells. Put a default upper bound, just so we don't
     # start off unbounded if we are using a cutting plane method.
-    @variable(rm, 0 <= obj <= 10^10)
+    @variable(rm, 0 <= obj)
     # A variable to track each cells objective alue
-    @variable(rm, 0<= z[1:P]<=10^10)
+    @variable(rm, 0<= z[1:P])
     # Minimize not only the maximum of the cells but also each cell objective
     @objective(rm, Min, obj+0.1*sum(z[i] for i in 1:P))
 

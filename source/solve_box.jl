@@ -78,8 +78,8 @@ function build_scenario_based_box(inst::AllocationInstance, K::Int64)
     @constraint(rm, sum(w[i] for i in 1:I) <= W)                    # supply limit
     @constraint(rm, [i=1:I,k=1:K], sum(q[i,j,k] for j in 1:J) <= w[i])    # service point limit
         
-    @variable(rm, 0 <= obj <= 10^10)                        # The objective function will be the maximum of the objective function across all the cells
-    @variable(rm, 0<= z[1:K]<=10^10)                        # A variable to track each cells objective value
+    @variable(rm, 0 <= obj)                        # The objective function will be the maximum of the objective function across all the cells
+    @variable(rm, 0<= z[1:K])                        # A variable to track each cells objective value
     @objective(rm, Min, obj)
         
     # Constrain objective function for this cell

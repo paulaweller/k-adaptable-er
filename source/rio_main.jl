@@ -8,7 +8,7 @@ k = parse(Int64, ARGS[1])
 product = ARGS[2] # supply product
 lim = 7200.0         # runtime limit in seconds
 
-read_rio_instance(product)
+instance = read_rio_instance(product)
 
 # # save_x = eval(mod(l, 10) == 0)
 save_x = true

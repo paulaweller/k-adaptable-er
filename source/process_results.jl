@@ -2,58 +2,17 @@ using DataFrames, CSV
 
 include("simulate_solution.jl")
 
-function extract_results_rio(ko,supplies)
-    results = DataFrame()
+# # process synthetic data results 
 
-    for supply in supplies
+# extract_results([4,6,8],[10,15,20], [0.1, 0.3], [1,2,3,4,5])
+# observ = add_observables([4,6,8], [10,15,20], [0.1,0.3], [1])
+# results = DataFrame(CSV.File("source/results/all_batches/combined_results_all_batches.csv"))
+# results = innerjoin(results, observ, on = [:n,:m,:k,:pc,:instance])
+# output = open("source/results/all_batches/combined_results_all_batches_obs_k1.csv", "w")
+# CSV.write(output, results)
+# close(output)
 
-        # Specify the directory path
-        directory_path = "source/results/rio/$(supply)"
-
-        for k in ko
-            # Specify the common beginning of the filename
-            common_prefix = "results_$(supply)_k$(k).csv"
-
-            # Get a list of files in the directory that match the pattern
-            files = filter(x -> occursin(common_prefix, x), readdir(directory_path))
-            for file in files
-                # get file content
-                data = DataFrame(CSV.File(directory_path*"/"*file))
-
-                # add columns for supply, k
-                data[!,:supply] .= supply
-                data[!, :k] .= k
-
-                #merge with other data
-                results = vcat(results, data)
-            end
-        end
-    end
-
-    output = open("source/results/rio/combined_results.csv", "w")
-    CSV.write(output, results)
-    close(output)
-    return results
-end
-
-function add_observables_rio(supplies, ko)
-    
-    observ = DataFrame()
-
-    for supply in supplies
-        println(" supply = $(supply)")
-        for k in ko
-            println("\n k = $k")
-            obs_df = observable_worst_case_objectives(k,supply)
-
-            #merge with other data
-            observ= vcat(observ, obs_df)
-        end
-    end
-
-    
-    return observ
-end
+# process rio results
 
 ko = [1,2,3,4,5]
 supplies = ["Food", "Water", "Hygiene", "Cleaning", "Mattress", "Medicine"]

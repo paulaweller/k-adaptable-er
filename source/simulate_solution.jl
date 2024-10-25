@@ -353,21 +353,18 @@ function extract_results(ko,supplies)
 
         for k in ko
             # Specify the common beginning of the filename
-            common_prefix = "results_$(supply)_k$(k).csv"
+            file = "results_$(supply)_k$(k).csv"
 
-            # Get a list of files in the directory that match the pattern
-            files = filter(x -> occursin(common_prefix, x), readdir(directory_path))
-            for file in files
-                # get file content
-                data = DataFrame(CSV.File(directory_path*"/"*file))
+            # get file content
+            println("$(directory_path)/$(file)")
+            data = DataFrame(CSV.File("$(directory_path)/$(file)"))
 
-                # add columns for supply, k
-                data[!,:supply] .= supply
-                data[!, :k] .= k
+            # add columns for supply, k
+            data[!,:supply] .= supply
+            data[!, :k] .= k
 
-                #merge with other data
-                results = vcat(results, data)
-            end
+            #merge with other data
+            results = vcat(results, data)
         end
     end
 

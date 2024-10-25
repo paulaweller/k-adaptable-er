@@ -1,2 +1,2 @@
-it_bb,it_box,runtime_bb,runtime_box,zeta_box,θ_bb,θ_box
-42814,74,7200.275,7200.029,5481.709999999992,1.0e20,6.1881868711e9
+it_bb,it_box,p_true_pb,runtime_bb,runtime_box,runtime_pb,zeta_box,θ_bb,θ_box,θ_pb
+39634,80,1,7200.083,7200.04,4.435,5563.0,2.2673752684100002e10,6.3525781915e9,2.26737526841e10
